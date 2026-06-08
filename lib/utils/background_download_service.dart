@@ -11,7 +11,8 @@ import 'package:kazumi/utils/logger.dart';
 /// 2. 保持进程存活
 /// 3. 提供通知栏交互（暂停/取消）
 class BackgroundDownloadService {
-  static final BackgroundDownloadService _instance = BackgroundDownloadService._internal();
+  static final BackgroundDownloadService _instance =
+      BackgroundDownloadService._internal();
   factory BackgroundDownloadService() => _instance;
   BackgroundDownloadService._internal();
 
@@ -32,7 +33,7 @@ class BackgroundDownloadService {
 
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'kazumi_download_channel',
+        channelId: 'everyone_is_programmer_download_channel',
         channelName: '下载服务',
         channelDescription: '视频下载后台服务',
         channelImportance: NotificationChannelImportance.LOW,
@@ -59,7 +60,8 @@ class BackgroundDownloadService {
 
   Future<bool> needsNotificationPermission() async {
     if (!isSupported) return false;
-    final permission = await FlutterForegroundTask.checkNotificationPermission();
+    final permission =
+        await FlutterForegroundTask.checkNotificationPermission();
     return permission != NotificationPermission.granted;
   }
 
@@ -84,16 +86,19 @@ class BackgroundDownloadService {
         if (userAgreed) {
           final granted = await requestNotificationPermission();
           if (!granted) {
-            KazumiLogger().w('BackgroundDownloadService: notification permission denied by user');
+            KazumiLogger().w(
+                'BackgroundDownloadService: notification permission denied by user');
           }
         } else {
-          KazumiLogger().i('BackgroundDownloadService: user declined permission dialog');
+          KazumiLogger()
+              .i('BackgroundDownloadService: user declined permission dialog');
         }
       } else {
         // 没有设置回调，直接请求权限（兼容旧行为）
         final granted = await requestNotificationPermission();
         if (!granted) {
-          KazumiLogger().w('BackgroundDownloadService: notification permission denied');
+          KazumiLogger()
+              .w('BackgroundDownloadService: notification permission denied');
         }
       }
     }
@@ -113,11 +118,13 @@ class BackgroundDownloadService {
       if (_isRunning) {
         KazumiLogger().i('BackgroundDownloadService: service started');
       } else {
-        KazumiLogger().w('BackgroundDownloadService: service start returned non-success: $result');
+        KazumiLogger().w(
+            'BackgroundDownloadService: service start returned non-success: $result');
       }
       return _isRunning;
     } catch (e) {
-      KazumiLogger().e('BackgroundDownloadService: failed to start service', error: e);
+      KazumiLogger()
+          .e('BackgroundDownloadService: failed to start service', error: e);
       return false;
     }
   }
@@ -130,7 +137,8 @@ class BackgroundDownloadService {
       _isRunning = false;
       KazumiLogger().i('BackgroundDownloadService: service stopped');
     } catch (e) {
-      KazumiLogger().e('BackgroundDownloadService: failed to stop service', error: e);
+      KazumiLogger()
+          .e('BackgroundDownloadService: failed to stop service', error: e);
     }
   }
 
@@ -228,7 +236,8 @@ class _DownloadTaskHandler extends TaskHandler {
   @override
   void onNotificationButtonPressed(String id) {
     debugPrint('BackgroundDownloadService: notification button pressed: $id');
-    FlutterForegroundTask.sendDataToMain({'action': 'button_pressed', 'id': id});
+    FlutterForegroundTask.sendDataToMain(
+        {'action': 'button_pressed', 'id': id});
   }
 
   @override
@@ -244,7 +253,8 @@ class _DownloadTaskHandler extends TaskHandler {
 
   @override
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
-    debugPrint('BackgroundDownloadService: task handler destroyed (isTimeout: $isTimeout)');
+    debugPrint(
+        'BackgroundDownloadService: task handler destroyed (isTimeout: $isTimeout)');
   }
 
   @override

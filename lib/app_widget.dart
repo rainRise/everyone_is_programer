@@ -5,15 +5,17 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:kazumi/utils/utils.dart';
-import 'package:kazumi/utils/storage.dart';
+import 'package:kazumi/utils/platform_storage.dart';
+import 'package:kazumi/utils/platform_utils.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:kazumi/utils/logger.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:kazumi/bean/dialog/dialog_helper.dart';
-import 'package:kazumi/bean/settings/theme_provider.dart';
+import 'package:kazumi/pages/platform/platform_dialog.dart';
+import 'package:kazumi/pages/platform/platform_identity.dart';
+import 'package:kazumi/pages/platform/platform_metadata.dart';
+import 'package:kazumi/pages/platform/platform_theme_provider.dart';
+import 'package:kazumi/pages/platform/platform_theme_tokens.dart';
 import 'package:provider/provider.dart';
-import 'package:kazumi/utils/constants.dart';
 
 class AppWidget extends StatefulWidget {
   const AppWidget({super.key});
@@ -24,7 +26,7 @@ class AppWidget extends StatefulWidget {
 
 class _AppWidgetState extends State<AppWidget>
     with TrayListener, WidgetsBindingObserver, WindowListener {
-  Box setting = GStorage.setting;
+  Box setting = PlatformStorage.setting;
 
   final TrayManager trayManager = TrayManager.instance;
   bool showingExitDialog = false;
@@ -37,12 +39,12 @@ class _AppWidgetState extends State<AppWidget>
     trayManager.addListener(this);
     windowManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
-    Modular.setObservers([KazumiDialog.observer]);
+    Modular.setObservers([PlatformDialog.observer]);
     _initializePlatformIntegrations();
   }
 
   Future<void> _initializePlatformIntegrations() async {
-    if (Utils.isDesktop()) {
+    if (PlatformUtils.isDesktop()) {
       await windowManager.setPreventClose(true);
       await _handleTray();
     }
@@ -54,7 +56,7 @@ class _AppWidgetState extends State<AppWidget>
 
     try {
       final modes = await FlutterDisplayMode.supported;
-      final storageDisplay = setting.get(SettingBoxKey.displayMode);
+      final storageDisplay = setting.get(PlatformSettingKey.displayMode);
       DisplayMode selectedMode = DisplayMode.auto;
       if (storageDisplay != null) {
         selectedMode = modes.firstWhere(
@@ -68,7 +70,7 @@ class _AppWidgetState extends State<AppWidget>
       );
       await FlutterDisplayMode.setPreferredMode(preferred);
     } catch (e) {
-      KazumiLogger().e('DisPlay: set preferred mode failed', error: e);
+      PlatformLogger().e('DisPlay: set preferred mode failed', error: e);
     }
   }
 
@@ -83,28 +85,28 @@ class _AppWidgetState extends State<AppWidget>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final themeProvider = Provider.of<PlatformThemeProvider>(context);
     _applyStoredThemeSettings(themeProvider);
     _syncWindowsTitleBarBrightness(themeProvider);
   }
 
-  void _applyStoredThemeSettings(ThemeProvider themeProvider) {
+  void _applyStoredThemeSettings(PlatformThemeProvider themeProvider) {
     if (_didApplyStoredThemeSettings) return;
     _didApplyStoredThemeSettings = true;
 
     themeProvider.setThemeMode(_storedThemeMode(), notify: false);
     themeProvider.setDynamic(
-      setting.get(SettingBoxKey.useDynamicColor, defaultValue: false),
+      setting.get(PlatformSettingKey.useDynamicColor, defaultValue: false),
       notify: false,
     );
     themeProvider.setFontFamily(
-      setting.get(SettingBoxKey.useSystemFont, defaultValue: false),
+      setting.get(PlatformSettingKey.useSystemFont, defaultValue: false),
       notify: false,
     );
 
     final color = _storedThemeColor();
     final oledEnhance =
-        setting.get(SettingBoxKey.oledEnhance, defaultValue: false);
+        setting.get(PlatformSettingKey.oledEnhance, defaultValue: false);
     final defaultDarkTheme = _buildAppTheme(
       brightness: Brightness.dark,
       color: color,
@@ -116,14 +118,16 @@ class _AppWidgetState extends State<AppWidget>
         color: color,
         fontFamily: themeProvider.currentFontFamily,
       ),
-      oledEnhance ? Utils.oledDarkTheme(defaultDarkTheme) : defaultDarkTheme,
+      oledEnhance
+          ? PlatformUtils.oledDarkTheme(defaultDarkTheme)
+          : defaultDarkTheme,
       notify: false,
     );
   }
 
   ThemeMode _storedThemeMode() {
     return switch (
-        setting.get(SettingBoxKey.themeMode, defaultValue: 'system')) {
+        setting.get(PlatformSettingKey.themeMode, defaultValue: 'system')) {
       'dark' => ThemeMode.dark,
       'light' => ThemeMode.light,
       _ => ThemeMode.system,
@@ -132,7 +136,7 @@ class _AppWidgetState extends State<AppWidget>
 
   Color _storedThemeColor() {
     final defaultThemeColor =
-        setting.get(SettingBoxKey.themeColor, defaultValue: 'default');
+        setting.get(PlatformSettingKey.themeColor, defaultValue: 'default');
     if (defaultThemeColor == 'default') {
       return Colors.green;
     }
@@ -151,13 +155,13 @@ class _AppWidgetState extends State<AppWidget>
       brightness: brightness,
       colorSchemeSeed: color,
       colorScheme: colorScheme,
-      progressIndicatorTheme: progressIndicatorTheme2024,
-      sliderTheme: sliderTheme2024,
-      pageTransitionsTheme: pageTransitionsTheme2024,
+      progressIndicatorTheme: platformProgressIndicatorTheme,
+      sliderTheme: platformSliderTheme,
+      pageTransitionsTheme: platformPageTransitionsTheme,
     );
   }
 
-  void _syncWindowsTitleBarBrightness(ThemeProvider themeProvider) {
+  void _syncWindowsTitleBarBrightness(PlatformThemeProvider themeProvider) {
     if (!Platform.isWindows) return;
 
     final brightness =
@@ -166,7 +170,7 @@ class _AppWidgetState extends State<AppWidget>
 
     _lastTitleBarBrightness = brightness;
     windowManager.setBrightness(brightness).catchError((e) {
-      KazumiLogger().w('Window: set title bar brightness failed', error: e);
+      PlatformLogger().w('Window: set title bar brightness failed', error: e);
     });
   }
 
@@ -194,21 +198,21 @@ class _AppWidgetState extends State<AppWidget>
   /// 需要使用 `windowManager.close()` 来触发，`exit(0)` 会直接退出程序
   @override
   void onWindowClose() {
-    final setting = GStorage.setting;
+    final setting = PlatformStorage.setting;
     final exitBehavior =
-        setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
+        setting.get(PlatformSettingKey.exitBehavior, defaultValue: 2);
 
     switch (exitBehavior) {
       case 0:
         exit(0);
       case 1:
-        KazumiDialog.dismiss();
+        PlatformDialog.dismiss();
         windowManager.hide();
         break;
       default:
         if (showingExitDialog) return;
         showingExitDialog = true;
-        KazumiDialog.show(onDismiss: () {
+        PlatformDialog.show(onDismiss: () {
           showingExitDialog = false;
         }, builder: (context) {
           bool saveExitBehavior = false; // 下次不再询问？
@@ -219,7 +223,7 @@ class _AppWidgetState extends State<AppWidget>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('您想要退出 Kazumi 吗？'),
+                const Text('您想要退出人人都是程序员吗？'),
                 const SizedBox(height: 24),
                 StatefulBuilder(builder: (context, setState) {
                   onChanged(value) {
@@ -242,22 +246,22 @@ class _AppWidgetState extends State<AppWidget>
               TextButton(
                   onPressed: () async {
                     if (saveExitBehavior) {
-                      await setting.put(SettingBoxKey.exitBehavior, 0);
+                      await setting.put(PlatformSettingKey.exitBehavior, 0);
                     }
                     exit(0);
                   },
-                  child: const Text('退出 Kazumi')),
+                  child: const Text('退出应用')),
               TextButton(
                   onPressed: () async {
                     if (saveExitBehavior) {
-                      await setting.put(SettingBoxKey.exitBehavior, 1);
+                      await setting.put(PlatformSettingKey.exitBehavior, 1);
                     }
-                    KazumiDialog.dismiss();
+                    PlatformDialog.dismiss();
                     windowManager.hide();
                   },
                   child: const Text('最小化至托盘')),
               const TextButton(
-                  onPressed: KazumiDialog.dismiss, child: Text('取消')),
+                  onPressed: PlatformDialog.dismiss, child: Text('取消')),
             ],
           );
         });
@@ -271,22 +275,22 @@ class _AppWidgetState extends State<AppWidget>
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      KazumiLogger()
+      PlatformLogger()
           .i("AppLifecycleState.paused: Application moved to background");
     } else if (state == AppLifecycleState.resumed) {
-      KazumiLogger()
+      PlatformLogger()
           .i("AppLifecycleState.resumed: Application moved to foreground");
     } else if (state == AppLifecycleState.inactive) {
-      KazumiLogger().i("AppLifecycleState.inactive: Application is inactive");
+      PlatformLogger().i("AppLifecycleState.inactive: Application is inactive");
     }
   }
 
   @override
   Future<void> didChangePlatformBrightness() async {
     super.didChangePlatformBrightness();
-    final ThemeProvider themeProvider =
-        Provider.of<ThemeProvider>(context, listen: false);
-    KazumiLogger().i(
+    final PlatformThemeProvider themeProvider =
+        Provider.of<PlatformThemeProvider>(context, listen: false);
+    PlatformLogger().i(
         "Platform brightness changed, themeMode: ${themeProvider.themeMode}");
 
     _syncWindowsTitleBarBrightness(themeProvider);
@@ -297,28 +301,29 @@ class _AppWidgetState extends State<AppWidget>
       await trayManager.setIcon('assets/images/logo/logo_lanczos.ico');
     } else if (Platform.environment.containsKey('FLATPAK_ID') ||
         Platform.environment.containsKey('SNAP')) {
-      await trayManager.setIcon('io.github.Predidit.Kazumi');
+      await trayManager.setIcon(platformLinuxApplicationId);
     } else {
       await trayManager.setIcon('assets/images/logo/logo_rounded.png');
     }
 
     if (!Platform.isLinux) {
-      await trayManager.setToolTip('Kazumi');
+      await trayManager.setToolTip(programmerPlatformTitle);
     }
 
     Menu trayMenu = Menu(items: [
       MenuItem(key: 'show_window', label: '显示窗口'),
       MenuItem.separator(),
-      MenuItem(key: 'exit', label: '退出 Kazumi')
+      MenuItem(key: 'exit', label: '退出应用')
     ]);
     await trayManager.setContextMenu(trayMenu);
   }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeProvider themeProvider = Provider.of<ThemeProvider>(context);
+    final PlatformThemeProvider themeProvider =
+        Provider.of<PlatformThemeProvider>(context);
     bool oledEnhance =
-        setting.get(SettingBoxKey.oledEnhance, defaultValue: false);
+        setting.get(PlatformSettingKey.oledEnhance, defaultValue: false);
 
     var app = DynamicColorBuilder(
       builder: (theme, darkTheme) {
@@ -339,11 +344,11 @@ class _AppWidgetState extends State<AppWidget>
               )
             : themeProvider.dark;
         final effectiveDarkTheme = useDynamicColor && oledEnhance
-            ? Utils.oledDarkTheme(dynamicDarkTheme)
+            ? PlatformUtils.oledDarkTheme(dynamicDarkTheme)
             : dynamicDarkTheme;
 
         return MaterialApp.router(
-          title: "Kazumi",
+          title: programmerPlatformTitle,
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           supportedLocales: const [
             Locale.fromSubtags(

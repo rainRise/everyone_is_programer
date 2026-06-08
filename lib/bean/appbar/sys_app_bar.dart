@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
-import 'package:kazumi/utils/storage.dart';
+import 'package:kazumi/utils/platform_storage.dart';
 import 'package:kazumi/utils/utils.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -41,8 +41,8 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
       this.needTopOffset = true});
 
   bool showWindowButton() {
-    return GStorage.setting
-        .get(SettingBoxKey.showWindowButton, defaultValue: false);
+    return PlatformStorage.setting
+        .get(PlatformSettingKey.showWindowButton, defaultValue: false);
   }
 
   @override

@@ -1,1 +1,1 @@
-An anime collection APP based on custom rules.
+﻿Resources, coding practice, and recovery rhythm for programmers.

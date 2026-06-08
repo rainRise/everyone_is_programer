@@ -1,1 +1,1 @@
-A flutter app for collecting and watching anime online with custom rules. Use up to five lines of Xpath expressions to build your own rules. Supports rule import and rule sharing. Supports danmaku. In development (～￣▽￣)～
+﻿Everyone Is Programmer is a learning platform for self-taught developers. It brings together learning resources, coding practice, local RAG knowledge organization, code audit exercises, and focus/rest rhythm tracking. This MVP keeps the existing Flutter foundation while focusing the default experience on learning, coding, and recovery zones.

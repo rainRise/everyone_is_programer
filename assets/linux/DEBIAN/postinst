@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-ln -sf /opt/Kazumi/kazumi /usr/bin/kazumi
-chmod +x /usr/bin/kazumi
+ln -sf /opt/everyone_is_programmer/everyone_is_programmer /usr/bin/everyone_is_programmer
+chmod +x /usr/bin/everyone_is_programmer
 update-mime-database /usr/share/mime || true
 update-desktop-database /usr/share/applications || true
 exit 0

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=人人都是程序员
+Comment=Programmer learning platform with resources, coding practice, and recovery rhythm.
+Comment[zh_CN]=面向程序员的资料学习、编程实践与节奏恢复平台
+Exec=everyone_is_programmer
+StartupWMClass=everyone_is_programmer
+Icon=io.github.everyone_is_programmer.Platform
+Terminal=false
+Type=Application
+Categories=Development;Education;

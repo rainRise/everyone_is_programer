@@ -3,8 +3,9 @@ import 'package:card_settings_ui/section/settings_section.dart';
 import 'package:card_settings_ui/tile/settings_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
-import 'package:kazumi/utils/storage.dart';
+import 'package:kazumi/pages/platform/platform_app_bar.dart';
+import 'package:kazumi/pages/router.dart';
+import 'package:kazumi/utils/platform_storage.dart';
 
 class InterfaceSettingsPage extends StatefulWidget {
   const InterfaceSettingsPage({super.key});
@@ -14,28 +15,25 @@ class InterfaceSettingsPage extends StatefulWidget {
 }
 
 class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
-  Box setting = GStorage.setting;
-  late bool showRating;
+  Box setting = PlatformStorage.setting;
   late String defaultPage;
   final MenuController defaultPageMenuController = MenuController();
-
-  static const Map<String, String> defaultPageMap = {
-    '/tab/popular/': '推荐',
-    '/tab/timeline/': '时间表',
-    '/tab/collect/': '追番',
-    '/tab/my/': '我的',
-  };
 
   @override
   void initState() {
     super.initState();
-    showRating = setting.get(SettingBoxKey.showRating, defaultValue: true);
-    defaultPage = setting.get(SettingBoxKey.defaultStartupPage,
-        defaultValue: '/tab/popular/');
+    final storedDefaultPage = setting.get(
+      PlatformSettingKey.defaultStartupPage,
+      defaultValue: defaultPlatformStartupPath,
+    );
+    defaultPage = normalizePlatformStartupPath(storedDefaultPage);
+    if (defaultPage != storedDefaultPage) {
+      setting.put(PlatformSettingKey.defaultStartupPage, defaultPage);
+    }
   }
 
   void updateDefaultPage(String page) {
-    setting.put(SettingBoxKey.defaultStartupPage, page);
+    setting.put(PlatformSettingKey.defaultStartupPage, page);
     setState(() {
       defaultPage = page;
     });
@@ -46,7 +44,7 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
 
     return Scaffold(
-      appBar: SysAppBar(
+      appBar: PlatformAppBar(
         title: Text('界面设置'),
       ),
       body: SettingsList(
@@ -68,12 +66,12 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
                 controller: defaultPageMenuController,
                 builder: (_, __, ___) {
                   return Text(
-                    defaultPageMap[defaultPage] ?? '推荐',
+                    defaultPlatformPageLabels[defaultPage] ?? '资料',
                     style: TextStyle(fontFamily: fontFamily),
                   );
                 },
                 menuChildren: [
-                  for (final entry in defaultPageMap.entries)
+                  for (final entry in defaultPlatformPageLabels.entries)
                     MenuItemButton(
                       requestFocusOnHover: false,
                       onPressed: () => updateDefaultPage(entry.key),
@@ -96,19 +94,6 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
                     ),
                 ],
               ),
-            ),
-          ]),
-          SettingsSection(tiles: [
-            SettingsTile.switchTile(
-              onToggle: (value) async {
-                showRating = value ?? !showRating;
-                await setting.put(SettingBoxKey.showRating, showRating);
-                setState(() {});
-              },
-              title: Text('显示评分', style: TextStyle(fontFamily: fontFamily)),
-              description: Text('关闭后将在概览中隐藏评分信息',
-                  style: TextStyle(fontFamily: fontFamily)),
-              initialValue: showRating,
             ),
           ]),
         ],

@@ -21,11 +21,15 @@ HANDLE mutex = NULL;
 
 // Window class name must match the one in win32_window.cpp
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
+constexpr const wchar_t kPlatformWindowTitle[] =
+    L"\u4eba\u4eba\u90fd\u662f\u7a0b\u5e8f\u5458";
+constexpr const wchar_t kPlatformMutexName[] =
+    L"everyone_is_programmer.win.mutex";
 
 bool ActivateExistingWindow()
 {
   // Find the existing window by class name
-  HWND hwnd = ::FindWindow(kWindowClassName, L"kazumi");
+  HWND hwnd = ::FindWindow(kWindowClassName, kPlatformWindowTitle);
   if (hwnd != NULL)
   {
     // Check if window is hidden (e.g., minimized to tray)
@@ -63,7 +67,7 @@ bool isSingleInstance()
   {
     return true;
   }
-  std::wstring mutex_str = L"kazumi.win.mutex";
+  std::wstring mutex_str = kPlatformMutexName;
   mutex = ::CreateMutex(NULL, TRUE, mutex_str.c_str());
   if (mutex == NULL || GetLastError() == ERROR_ALREADY_EXISTS)
   {
@@ -110,7 +114,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"kazumi", origin, size))
+  if (!window.Create(kPlatformWindowTitle, origin, size))
   {
     if (mutex) {
       CloseHandle(mutex);

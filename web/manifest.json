@@ -1,11 +1,11 @@
 {
-    "name": "kazumi",
-    "short_name": "kazumi",
+    "name": "人人都是程序员",
+    "short_name": "程序员平台",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "资料学习、编程实践与节奏恢复平台。",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

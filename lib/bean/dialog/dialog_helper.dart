@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:kazumi/utils/constants.dart';
+
+const double _dialogMediumBreakpointWidth = 840;
 
 // A simple dialog helper class to show dialogs and toasts based on flutter native implementation (replace flutter_smart_dialog)
 // flutter_smart_dialog use overlays and self-managed route stack to show dialogs.
@@ -58,8 +59,7 @@ class KazumiDialog {
             SnackBar(
               content: Text(message),
               behavior: SnackBarBehavior.floating,
-              width: MediaQuery.sizeOf(ctx).width >
-                      LayoutBreakpoint.medium['width']!
+              width: MediaQuery.sizeOf(ctx).width > _dialogMediumBreakpointWidth
                   ? 600
                   : null,
               duration: duration,

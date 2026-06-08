@@ -1,195 +1,95 @@
-# Kazumi
-使用 Flutter 开发的基于自定义规则的番剧采集与在线观看程序。使用最多五行基于 `Xpath` 语法的选择器构建自己的规则。支持规则导入与规则分享。支持基于 `Anime4K` 的实时超分辨率。绝赞开发中 (～￣▽￣)～
+# 人人都是程序员
 
-## 支持平台
+一个基于 Flutter 的程序员学习平台，面向自学、项目实践和长期节奏管理。当前版本把原有 Flutter 桌面/移动端壳改造成三个主要区域：资料学习区、编程区、放松区。
 
-- Android 10 及以上
-- Windows 10 及以上
-- MacOS 10.15 及以上
-- Linux (实验性)
-- iOS 13 及以上 (需要[自签名](https://kazumi.app/docs/misc/how-to-install-in-ios.html))
-- HarmonyOS 5.0 及以上 (位于[分支仓库](https://github.com/ErBWs/Kazumi/releases/latest)，需要[侧载](https://kazumi.app/docs/misc/how-to-install-in-ohos.html))
+## 三大区域
 
-## 屏幕截图 
+### 资料学习区
 
-<table>
-  <tr>
-    <td><img alt="" src="static/screenshot/img_1.png"></td>
-    <td><img alt="" src="static/screenshot/img_2.png"></td>
-    <td><img alt="" src="static/screenshot/img_3.png"></td>
-  <tr>
-  <tr>
-    <td><img alt="" src="static/screenshot/img_4.png"></td>
-    <td><img alt="" src="static/screenshot/img_5.png"></td>
-    <td><img alt="" src="static/screenshot/img_6.png"></td>
-  <tr>
-</table>
+- 视频资源：CS50、MIT 6.006、FreeCodeCamp 等课程入口。
+- 常用 Skill：TDD、系统化调试、代码审查等 Agent 工作流。
+- MCP 工具：Context7、Filesystem MCP、GitHub MCP。
+- 本地 RAG：支持导入标题、来源、摘要、内容和标签，并持久化到本地 Hive 设置盒。
+- RAG 分块检索与回答草稿：根据当前问题召回本地资料分块，生成带引用和检索依据的可追溯回答。
+- 推荐算法原型：按编程基础、本地 RAG、代码审计、推荐算法目标进行本地召回和排序。
+- 学习进度：资源可标记完成，并持久化保存。
 
-## 功能 / 开发计划
+### 编程区
 
-- [x] 规则编辑器
-- [x] 番剧目录
-- [x] 番剧搜索
-- [x] 番剧时间表
-- [x] 番剧字幕
-- [x] 分集播放
-- [x] 视频播放器
-- [x] 多视频源支持
-- [x] 规则分享
-- [x] 硬件加速
-- [x] 高刷适配
-- [x] 追番列表
-- [x] 番剧弹幕
-- [x] 在线更新
-- [x] 历史记录
-- [x] 倍速播放
-- [x] 配色方案 
-- [x] 跨设备同步
-- [x] 无线投屏 (DLNA)
-- [x] 外部播放器播放
-- [x] 超分辨率
-- [x] 一起看
-- [x] 番剧下载
-- [ ] 番剧更新提醒
-- [ ] 还有更多 (/・ω・＼) 
+- 审计清单：导入项目、规则扫描、AI 审计、生成报告。
+- 本地规则扫描：识别硬编码密钥、动态 `eval`、明文 HTTP、调试输出。
+- Markdown 审计报告：可复制风险统计、位置、证据和修复建议。
+- 报告保存：可把 Markdown 审计报告保存到本地应用支持目录。
+- Prompt 模板：安全审计、学习复盘、推荐模型设计。
 
-## 下载
+### 放松区
 
-通过本页面 [releases](https://github.com/Predidit/Kazumi/releases) 选项卡下载：
+- 专注计时：25 分钟专注、5 分钟短休息、15 分钟长休息。
+- 节奏记录：记录完成的专注/休息会话，统计次数和累计分钟数。
+- 本地持久化：节奏记录保存到 Hive 设置盒。
 
-<a href="https://github.com/Predidit/Kazumi/releases">
-  <img src="static/svg/get_it_on_github.svg" alt="Get it on Github" width="200"/>
-</a>
+## 本地数据
 
-### Android
+当前平台使用已有 Hive `setting` box 保存轻量数据：
 
-<a href="https://f-droid.org/packages/com.predidit.kazumi">
-  <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en-us.svg"
-  alt="Get it on F-Droid" width="200">
-</a>
+- `platformRagDocuments`：用户导入的 RAG 资料。
+- `platformCompletedLearningResources`：已完成学习资源 id。
+- `platformRelaxSessions`：专注/休息节奏记录。
 
-### GNU/Linux
+这些数据是本地优先的 MVP 设计，后续可以替换为更完整的知识库索引、向量检索或云同步。
 
-&nbsp;&nbsp;
-<a href="https://flathub.org/apps/io.github.Predidit.Kazumi">
-  <img src="https://flathub.org/api/badge?svg&locale=en" alt="Get it on Flathub" width="175"/>
-</a>
+## 旧模块隔离
 
-#### Arch Linux
+项目仍保留原 Kazumi 的历史代码和依赖，但平台模式下启动流程默认不再主动初始化旧插件、Bangumi 同步、弹幕屏蔽、下载后台服务和自动更新检查。这样可以先保证三大区平台体验稳定，再分阶段拆除旧业务模块。
 
-可以从 [AUR](http://aur.archlinux.org) 或 [archlinuxcn](https://github.com/archlinuxcn/repo) 安装。
+Windows 原生入口也已开始收口：初始窗口标题、单实例互斥锁、桌面快捷方式名称、版本信息和 Release 可执行文件名使用 `人人都是程序员` 平台身份。Dart package name 暂未大范围重命名，以降低现阶段构建风险。
 
-##### AUR
+依赖收口记录见 `docs/plans/platform-dependency-audit.md`。当前策略是先守住默认平台入口，再分批移除 legacy 源码和对应依赖。
+
+## 开发与验证
+
+常用命令：
 
 ```bash
-[yay/paru] -S kazumi # 从源码构建
-[yay/paru] -S kazumi-bin # 二进制包
+flutter test
+dart analyze lib/pages/platform test
+flutter build windows
 ```
 
-##### archlinuxcn
+当前新增平台功能有对应测试覆盖，包括：
+
+- 三大区页面和路由。
+- 学习资源目录、进度仓储。
+- 本地 RAG 分块检索、回答草稿和持久化仓储。
+- 推荐算法原型。
+- 本地代码审计规则和 Markdown 报告。
+- 本地代码审计报告保存。
+- 放松节奏记录仓储。
+- 平台身份常量。
+- 平台默认模块、设置模块和启动页的旧业务隔离边界。
+
+## 构建说明
+
+项目仍保留原 Flutter 多端工程结构，可在 Windows、Android、macOS、Linux、iOS 等 Flutter 支持平台上继续演进。当前验证重点放在 Windows：
 
 ```bash
-sudo pacman -S kazumi
+flutter build windows
 ```
 
-## 贡献
+构建产物默认位于：
 
-欢迎向我们的 [规则仓库](https://github.com/Predidit/KazumiRules) 提交您的自定义规则。您可以自由选择是否在规则中留下您的ID
+```text
+build/windows/x64/runner/Release/everyone_is_programmer.exe
+```
 
-## Q&A
+## 变更日志
 
-<details>
-<summary>使用者 Q&A</summary>
+详细实现思路、每一步为什么做、想实现什么功能、验证结果，记录在：
 
-#### Q: 为什么少数番剧中有广告？
+```text
+docs/dev-log/2026-05-28-programmer-learning-platform-log.md
+```
 
-A: 本项目未插入任何广告。广告来自视频源, 请不要相信广告中的任何内容, 并尽量选择没有广告的视频源观看。
+## 许可证
 
-#### Q: 为什么我启用超分辨率功能后播放卡顿？
-
-A: 超分辨率功能对 GPU 性能要求较高, 如果没有在高性能独立显卡上运行 Kazumi, 尽量选择效率档而非质量档。对低分辨率视频源而非高分辨率视频源使用超分也可以降低性能消耗。
-
-#### Q: 为什么播放视频时内存占用较高？
-
-A: 本程序在视频播放时, 会尽可能多地缓存视频到内存, 以提供较好的观看体验。如果您的内存较为紧张, 可以在播放设置选项卡启用低内存模式, 这将限制缓存。
-
-#### Q: 为什么少数番剧无法通过外部播放器观看？
-
-A: 部分视频源的番剧使用了反盗链措施, 这可以被 Kazumi 解决, 但无法被外部播放器解决。
-
-#### Q: 为什么下载的 Linux 版本缺少图标和托盘功能？
-
-A: 使用 .deb 版本进行安装, tar.gz 版本仅为方便二次打包, 这一格式先天缺乏图标和托盘功能支持。
-
-</details>
-
-<details>
-<summary>规则编写者 Q&A</summary>
-
-#### Q: 为什么我的自定义规则无法实现检索？
-
-A: 目前我们对 `Xpath` 语法的支持并不完整, 我们目前只支持以 `//` 开头的选择器。建议参照我们给出的示例规则构建自定义规则。
-
-#### Q: 为什么我的自定义规则可以实现检索, 但不能实现观看？
-
-A: 尝试关闭自定义规则的使用内置播放器选项, 这将尝试使用 `webview` 进行播放, 提高兼容性。但在内置播放器可用时, 建议启用内置播放器, 以获得更加流畅并带有弹幕的观看体验。
-
-</details>
-
-<details>
-<summary>开发者 Q&A</summary>
-
-#### Q: 我在尝试自行编译该项目, 但编译没有成功。
-
-A: 本项目编译需要良好的网络环境, 除了由 Google 托管的 Flutter 相关依赖外, 本项目同样依赖托管在 MavenCentral/Github/SourceForge 上的资源。如果您位于中国大陆, 可能需要设置恰当的镜像地址。
-
-</details>
-
-## 美术资源
-
-本项目图标来自 [Yuquanaaa](https://www.pixiv.net/users/66219277) 发表在 [Pixiv](https://www.pixiv.net/artworks/116666979) 上的作品。
-
-此图标由其原作者 [Yuquanaaa](https://www.pixiv.net/users/66219277) 拥有版权。我们已获得原作者的授权和许可, 可以在本项目中使用这一图标。这一图标不是自由使用的, 未经原作者明确授权, 任何人不得擅自使用、复制、修改或分发这一图标。
-
-本项目内嵌字体为 [Mi Sans](https://hyperos.mi.com/font/en/details/sc/) 字体, 由 [Xiaomi](https://www.mi.com/) 开发和拥有版权。
-
-## 免责声明
-
-本项目基于 GNU 通用公共许可证第 3 版（GPL-3.0）授权。我们不对其适用性、可靠性或准确性作出任何明示或暗示的保证。在法律允许的最大范围内, 作者和贡献者不承担任何因使用本软件而产生的直接、间接、偶然、特殊或后果性的损害赔偿责任。
-
-使用本项目需遵守所在地法律法规, 不得进行任何侵犯第三方知识产权的行为。因使用本项目而产生的数据和缓存应在24小时内清除, 超出 24 小时的使用需获得相关权利人的授权。
-
-## 隐私政策 (Privacy policy)
-
-我们不收集任何用户数据, 不使用任何遥测组件。
-
-## 代码签名策略 (Code signing policy)
-提交者: [Contributors](https://github.com/Predidit/Kazumi/graphs/contributors)
-审阅者: [Owner](https://github.com/Predidit)
-
-## 赞助 (Sponsors)
-| ![signpath](https://signpath.org/assets/favicon-50x50.png) | Free code signing on Windows provided by [SignPath.io](https://about.signpath.io/), certficate by [SignPath Foundation](https://signpath.org/) |
-|------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-
-## 致谢
-
-特别感谢 [XpathSelector](https://github.com/simonkimi/xpath_selector) 这个优秀的项目是本项目的基石。
-
-特别感谢 [DandanPlayer](https://www.dandanplay.com/) 本项目使用了 dandanplayer 开放 API 以提供弹幕交互。
-
-特别感谢 [Bangumi](https://bangumi.tv/) 本项目使用了 Bangumi 开放 API 以提供番剧元数据。
-
-特别感谢 [Anime4K](https://github.com/bloc97/Anime4K) 本项目使用 Anime4K 进行实时超分。
-
-特别感谢 [SyncPlay](https://github.com/Syncplay/syncplay) 本项目使用 SyncPlay 协议并通过 SyncPlay 公共服务器实现一起看功能。
-
-特别感谢 [trace.moe](https://trace.moe) 本项目使用了 trace.moe 提供的图片识别番剧功能。
-
-感谢 [media-kit](https://github.com/media-kit/media-kit) 本项目跨平台媒体播放能力来自 media-kit。
-
-感谢 [avbuild](https://github.com/wang-bin/avbuild) 本项目使用了来自 avbuild 的树外补丁实现非标准视频流播放。
-
-感谢 [hive](https://github.com/isar/hive) 本项目持久化储存能力来自 hive。
-
-
-
+本项目继承原工程许可证，详见 `LICENSE`。

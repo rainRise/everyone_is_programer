@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:synchronized/synchronized.dart';
 
 const Symbol _forceLogKey = #_forceLog;
+const String platformLogFileName = 'programmer_platform.log';
 
-class KazumiLogFilter extends LogFilter {
+class PlatformLogFilter extends LogFilter {
   @override
   bool shouldLog(LogEvent event) {
     final forceLog = Zone.current[_forceLogKey] as bool? ?? false;
@@ -19,12 +21,11 @@ class KazumiLogFilter extends LogFilter {
   }
 }
 
-class KazumiLogPrinter extends PrettyPrinter {
-  KazumiLogPrinter()
+class PlatformLogPrinter extends PrettyPrinter {
+  PlatformLogPrinter()
       : super(
           methodCount: 0,
-          errorMethodCount:
-              8,
+          errorMethodCount: 8,
           lineLength: 120,
           colors: true,
           // Disable emojis for better compatibility
@@ -104,7 +105,7 @@ class KazumiLogPrinter extends PrettyPrinter {
   }
 }
 
-class KazumiLogOutput extends LogOutput {
+class PlatformLogOutput extends LogOutput {
   static final Lock _logLock = Lock();
   static String? _logFilePath;
 
@@ -117,14 +118,14 @@ class KazumiLogOutput extends LogOutput {
     if (!await directory.exists()) {
       await directory.create(recursive: true);
     }
-    _logFilePath = p.join(logDir, "kazumi_logs.log");
+    _logFilePath = p.join(logDir, platformLogFileName);
     return _logFilePath!;
   }
 
   @override
   void output(OutputEvent event) {
     for (var line in event.lines) {
-      print(line);
+      debugPrint(line);
     }
 
     // Write to file if: warning/error/fatal OR forceLog is enabled
@@ -154,8 +155,8 @@ class KazumiLogOutput extends LogOutput {
           buffer.toString(),
           mode: FileMode.writeOnlyAppend,
         );
-      } catch (e) {
-        print('Failed to write log to file: $e');
+      } catch (_) {
+        // Avoid recursive logging if the log output itself fails.
       }
     });
   }
@@ -166,17 +167,17 @@ class KazumiLogOutput extends LogOutput {
   }
 }
 
-class KazumiLogger {
-  KazumiLogger._internal() {
+class PlatformLogger {
+  PlatformLogger._internal() {
     _logger = Logger(
-      filter: KazumiLogFilter(),
-      printer: KazumiLogPrinter(),
-      output: KazumiLogOutput(),
+      filter: PlatformLogFilter(),
+      printer: PlatformLogPrinter(),
+      output: PlatformLogOutput(),
     );
   }
 
-  static final KazumiLogger _instance = KazumiLogger._internal();
-  factory KazumiLogger() {
+  static final PlatformLogger _instance = PlatformLogger._internal();
+  factory PlatformLogger() {
     return _instance;
   }
 
@@ -192,44 +193,65 @@ class KazumiLogger {
   /// Trace log - lowest level, very detailed information
   void t(dynamic message,
       {Object? error, StackTrace? stackTrace, bool forceLog = false}) {
-    _log(() => _logger.t(message, error: error, stackTrace: stackTrace), forceLog);
+    _log(() => _logger.t(message, error: error, stackTrace: stackTrace),
+        forceLog);
   }
 
   /// Debug log - detailed information for debugging
   void d(dynamic message,
       {Object? error, StackTrace? stackTrace, bool forceLog = false}) {
-    _log(() => _logger.d(message, error: error, stackTrace: stackTrace), forceLog);
+    _log(() => _logger.d(message, error: error, stackTrace: stackTrace),
+        forceLog);
   }
 
   /// Info log - informational messages
   void i(dynamic message,
       {Object? error, StackTrace? stackTrace, bool forceLog = false}) {
-    _log(() => _logger.i(message, error: error, stackTrace: stackTrace), forceLog);
+    _log(() => _logger.i(message, error: error, stackTrace: stackTrace),
+        forceLog);
   }
 
   /// Warning log - potentially harmful situations
   void w(dynamic message,
       {Object? error, StackTrace? stackTrace, bool forceLog = false}) {
-    _log(() => _logger.w(message, error: error, stackTrace: stackTrace), forceLog);
+    _log(() => _logger.w(message, error: error, stackTrace: stackTrace),
+        forceLog);
   }
 
   /// Error log - error events that might still allow the app to continue
   void e(dynamic message,
       {Object? error, StackTrace? stackTrace, bool forceLog = false}) {
-    _log(() => _logger.e(message, error: error, stackTrace: stackTrace), forceLog);
+    _log(() => _logger.e(message, error: error, stackTrace: stackTrace),
+        forceLog);
   }
 
   /// Fatal log - very severe error events that will presumably lead the app to abort
   void f(dynamic message,
       {Object? error, StackTrace? stackTrace, bool forceLog = false}) {
-    _log(() => _logger.f(message, error: error, stackTrace: stackTrace), forceLog);
+    _log(() => _logger.f(message, error: error, stackTrace: stackTrace),
+        forceLog);
+  }
+}
+
+class KazumiLogFilter extends PlatformLogFilter {}
+
+class KazumiLogPrinter extends PlatformLogPrinter {}
+
+class KazumiLogOutput extends PlatformLogOutput {}
+
+class KazumiLogger extends PlatformLogger {
+  KazumiLogger._internal() : super._internal();
+
+  static final KazumiLogger _instance = KazumiLogger._internal();
+  factory KazumiLogger() {
+    return _instance;
   }
 }
 
 Future<File> getLogsPath() async {
   final dir = (await getApplicationSupportDirectory()).path;
   final logDir = p.join(dir, "logs");
-  final filename = p.join(logDir, "kazumi_logs.log");
+  final filename = p.join(logDir, platformLogFileName);
 
   final directory = Directory(logDir);
   if (!await directory.exists()) {
@@ -238,7 +260,7 @@ Future<File> getLogsPath() async {
 
   final file = File(filename);
   if (!await file.exists()) {
-    await KazumiLogOutput._logLock.synchronized(() async {
+    await PlatformLogOutput._logLock.synchronized(() async {
       if (!await file.exists()) {
         await file.create();
       }
@@ -250,12 +272,11 @@ Future<File> getLogsPath() async {
 Future<bool> clearLogs() async {
   try {
     final file = await getLogsPath();
-    await KazumiLogOutput._logLock.synchronized(() async {
+    await PlatformLogOutput._logLock.synchronized(() async {
       await file.writeAsString('');
     });
     return true;
-  } catch (e) {
-    print('Error clearing file: $e');
+  } catch (_) {
     return false;
   }
 }

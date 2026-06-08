@@ -36,8 +36,8 @@ class AudioController {
     late _KazumiAudioHandler rawHandler;
     if (Platform.isLinux) {
       AudioServiceMpris.init(
-        dBusName: 'io.github.Predidit.Kazumi.channel.audio',
-        identity: 'Kazumi Playback',
+        dBusName: 'io.github.everyone_is_programmer.channel.audio',
+        identity: 'Everyone Is Programmer Playback',
         canControl: true,
         canPlay: true,
         canPause: true,
@@ -51,8 +51,9 @@ class AudioController {
         return rawHandler;
       },
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'io.github.Predidit.Kazumi.channel.audio',
-        androidNotificationChannelName: 'Kazumi Playback',
+        androidNotificationChannelId:
+            'io.github.everyone_is_programmer.channel.audio',
+        androidNotificationChannelName: 'Everyone Is Programmer Playback',
         androidNotificationOngoing: true,
       ),
     );
@@ -80,8 +81,7 @@ class AudioController {
         });
       }
     } catch (e) {
-      KazumiLogger()
-          .w('AudioController: audio_session init failed', error: e);
+      KazumiLogger().w('AudioController: audio_session init failed', error: e);
     }
   }
 
@@ -115,8 +115,7 @@ class AudioController {
         await _onPause!();
       }
     } catch (e) {
-      KazumiLogger()
-          .w('AudioController: interruption pause failed', error: e);
+      KazumiLogger().w('AudioController: interruption pause failed', error: e);
     }
   }
 
@@ -126,8 +125,7 @@ class AudioController {
         await _onPlay!();
       }
     } catch (e) {
-      KazumiLogger()
-          .w('AudioController: interruption resume failed', error: e);
+      KazumiLogger().w('AudioController: interruption resume failed', error: e);
     }
   }
 
@@ -137,8 +135,7 @@ class AudioController {
     try {
       await _audioSession?.setActive(active);
     } catch (e) {
-      KazumiLogger()
-          .w('AudioController: setActive($active) failed', error: e);
+      KazumiLogger().w('AudioController: setActive($active) failed', error: e);
     }
   }
 

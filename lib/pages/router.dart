@@ -1,8 +1,21 @@
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/pages/popular/popular_module.dart';
-import 'package:kazumi/pages/my/my_module.dart';
-import 'package:kazumi/pages/timeline/timeline_module.dart';
-import 'package:kazumi/pages/collect/collect_module.dart';
+import 'package:kazumi/pages/platform/coding_zone_module.dart';
+import 'package:kazumi/pages/platform/learning_zone_module.dart';
+import 'package:kazumi/pages/platform/relax_zone_module.dart';
+
+const defaultPlatformStartupPath = '/tab/learning/';
+
+const defaultPlatformPageLabels = {
+  '/tab/learning/': '资料',
+  '/tab/coding/': '编程',
+  '/tab/relax/': '放松',
+};
+
+String normalizePlatformStartupPath(Object? path) {
+  if (path is! String) return defaultPlatformStartupPath;
+  if (defaultPlatformPageLabels.containsKey(path)) return path;
+  return defaultPlatformStartupPath;
+}
 
 class MenuRouteItem {
   final String path;
@@ -29,26 +42,22 @@ class MenuRoute {
     return menuList.map((e) => ModuleRoute(e.path, module: e.module)).toList();
   }
 
-  getPath(int index) {
+  String getPath(int index) {
     return menuList[index].path;
   }
 }
 
 final MenuRoute menu = MenuRoute([
   MenuRouteItem(
-    path: "/popular",
-    module: PopularModule(),
+    path: "/learning",
+    module: LearningZoneModule(),
   ),
   MenuRouteItem(
-    path: "/timeline",
-    module: TimelineModule(),
+    path: "/coding",
+    module: CodingZoneModule(),
   ),
   MenuRouteItem(
-    path: "/collect",
-    module: CollectModule(),
-  ),
-  MenuRouteItem(
-    path: "/my",
-    module: MyModule(),
+    path: "/relax",
+    module: RelaxZoneModule(),
   ),
 ]);

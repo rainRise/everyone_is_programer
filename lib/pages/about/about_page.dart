@@ -4,13 +4,12 @@ import 'package:card_settings_ui/card_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
-import 'package:kazumi/bean/dialog/dialog_helper.dart';
-import 'package:kazumi/pages/my/my_controller.dart';
-import 'package:kazumi/request/config/api_endpoints.dart';
-import 'package:kazumi/utils/mortis.dart';
-import 'package:kazumi/utils/storage.dart';
-import 'package:kazumi/utils/utils.dart';
+import 'package:kazumi/pages/platform/platform_app_bar.dart';
+import 'package:kazumi/pages/platform/platform_dialog.dart';
+import 'package:kazumi/pages/platform/platform_identity.dart';
+import 'package:kazumi/pages/platform/platform_metadata.dart';
+import 'package:kazumi/utils/platform_storage.dart';
+import 'package:kazumi/utils/platform_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,28 +21,22 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  final exitBehaviorTitles = <String>['退出 Kazumi', '最小化至托盘', '每次都询问'];
-  late dynamic defaultDanmakuArea;
-  late dynamic defaultThemeMode;
-  late dynamic defaultThemeColor;
-  Box setting = GStorage.setting;
+  final exitBehaviorTitles = <String>['退出应用', '最小化至托盘', '每次都询问'];
+  Box setting = PlatformStorage.setting;
   late int exitBehavior =
-      setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
-  late bool autoUpdate;
+      setting.get(PlatformSettingKey.exitBehavior, defaultValue: 2);
   double _cacheSizeMB = -1;
-  final MyController myController = Modular.get<MyController>();
   final MenuController menuController = MenuController();
 
   @override
   void initState() {
     super.initState();
-    autoUpdate = setting.get(SettingBoxKey.autoUpdate, defaultValue: true);
     _getCacheSize();
   }
 
   void onBackPressed(BuildContext context) {
-    if (KazumiDialog.observer.hasKazumiDialog) {
-      KazumiDialog.dismiss();
+    if (PlatformDialog.observer.hasPlatformDialog) {
+      PlatformDialog.dismiss();
       return;
     }
   }
@@ -98,15 +91,17 @@ class _AboutPageState extends State<AboutPage> {
   }
 
   void _showCacheDialog() {
-    KazumiDialog.show(
+    PlatformDialog.show(
       builder: (context) {
         return AlertDialog(
           title: const Text('缓存管理'),
-          content: const Text('缓存为番剧封面, 清除后加载时需要重新下载,确认要清除缓存吗?'),
+          content: const Text(
+            '缓存主要用于图片和临时资源。清除后再次打开相关内容时需要重新加载，确认要清除吗？',
+          ),
           actions: [
             TextButton(
               onPressed: () {
-                KazumiDialog.dismiss();
+                PlatformDialog.dismiss();
               },
               child: Text(
                 '取消',
@@ -118,7 +113,7 @@ class _AboutPageState extends State<AboutPage> {
                 try {
                   _clearCache();
                 } catch (_) {}
-                KazumiDialog.dismiss();
+                PlatformDialog.dismiss();
               },
               child: const Text('确认'),
             ),
@@ -137,7 +132,7 @@ class _AboutPageState extends State<AboutPage> {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: const SysAppBar(title: Text('关于')),
+        appBar: const PlatformAppBar(title: Text('关于')),
         // backgroundColor: Colors.transparent,
         body: SettingsList(
           maxWidth: 1000,
@@ -160,61 +155,29 @@ class _AboutPageState extends State<AboutPage> {
               tiles: [
                 SettingsTile.navigation(
                   onPressed: (_) {
-                    launchUrl(Uri.parse(ApiEndpoints.projectUrl),
+                    launchUrl(Uri.parse(originalKazumiProjectUrl),
                         mode: LaunchMode.externalApplication);
                   },
-                  title: Text('项目主页', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('原始工程主页', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text(
+                    '当前平台基于原 Kazumi 工程壳继续演进。',
+                    style: TextStyle(fontFamily: fontFamily),
+                  ),
                 ),
                 SettingsTile.navigation(
                   onPressed: (_) {
-                    launchUrl(Uri.parse(ApiEndpoints.sourceUrl),
+                    launchUrl(Uri.parse(originalKazumiSourceUrl),
                         mode: LaunchMode.externalApplication);
                   },
-                  title: Text('代码仓库', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('原始工程仓库', style: TextStyle(fontFamily: fontFamily)),
                   value:
                       Text('Github', style: TextStyle(fontFamily: fontFamily)),
                 ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    launchUrl(Uri.parse(ApiEndpoints.iconUrl),
-                        mode: LaunchMode.externalApplication);
-                  },
-                  title: Text('图标创作', style: TextStyle(fontFamily: fontFamily)),
-                  value:
-                      Text('Pixiv', style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    launchUrl(Uri.parse(ApiEndpoints.bangumiIndex),
-                        mode: LaunchMode.externalApplication);
-                  },
-                  title: Text('番剧索引', style: TextStyle(fontFamily: fontFamily)),
-                  value:
-                      Text('Bangumi', style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    launchUrl(Uri.parse('https://trace.moe'),
-                        mode: LaunchMode.externalApplication);
-                  },
-                  title: Text('以图搜番', style: TextStyle(fontFamily: fontFamily)),
-                  value: Text('trace.moe',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    launchUrl(Uri.parse(ApiEndpoints.dandanIndex),
-                        mode: LaunchMode.externalApplication);
-                  },
-                  title: Text('弹幕来源', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('ID: ${mortis['id']}',
-                      style: TextStyle(fontFamily: fontFamily)),
-                  value: Text('DanDanPlay',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
               ],
             ),
-            if (Utils.isDesktop()) // 之后如果有非桌面平台的新选项可以移除
+            if (PlatformUtils.isDesktop()) // 之后如果有非桌面平台的新选项可以移除
               SettingsSection(
                 title: Text('默认行为', style: TextStyle(fontFamily: fontFamily)),
                 tiles: [
@@ -240,7 +203,7 @@ class _AboutPageState extends State<AboutPage> {
                             requestFocusOnHover: false,
                             onPressed: () {
                               exitBehavior = i;
-                              setting.put(SettingBoxKey.exitBehavior, i);
+                              setting.put(PlatformSettingKey.exitBehavior, i);
                               setState(() {});
                             },
                             child: Container(
@@ -265,6 +228,25 @@ class _AboutPageState extends State<AboutPage> {
                 ],
               ),
             SettingsSection(
+              title: Text('平台信息', style: TextStyle(fontFamily: fontFamily)),
+              tiles: [
+                SettingsTile.navigation(
+                  title: Text('当前身份', style: TextStyle(fontFamily: fontFamily)),
+                  value: Text(
+                    programmerPlatformTitle,
+                    style: TextStyle(fontFamily: fontFamily),
+                  ),
+                ),
+                SettingsTile.navigation(
+                  title: Text('版本', style: TextStyle(fontFamily: fontFamily)),
+                  value: Text(
+                    programmerPlatformVersion,
+                    style: TextStyle(fontFamily: fontFamily),
+                  ),
+                ),
+              ],
+            ),
+            SettingsSection(
               tiles: [
                 SettingsTile.navigation(
                   onPressed: (_) {
@@ -285,28 +267,6 @@ class _AboutPageState extends State<AboutPage> {
                       ? Text('统计中...', style: TextStyle(fontFamily: fontFamily))
                       : Text('${_cacheSizeMB.toStringAsFixed(2)}MB',
                           style: TextStyle(fontFamily: fontFamily)),
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('应用更新', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    autoUpdate = value ?? !autoUpdate;
-                    await setting.put(SettingBoxKey.autoUpdate, autoUpdate);
-                    setState(() {});
-                  },
-                  title: Text('自动更新', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: autoUpdate,
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    myController.checkUpdate();
-                  },
-                  title: Text('检查更新', style: TextStyle(fontFamily: fontFamily)),
-                  value: Text('当前版本 ${ApiEndpoints.version}',
-                      style: TextStyle(fontFamily: fontFamily)),
                 ),
               ],
             ),

@@ -140,7 +140,7 @@ class GStorage {
   }
 
   static Future init() async {
-    _hivePath = '${(await getApplicationSupportDirectory()).path}/hive';
+    await _prepareHivePath();
 
     Hive.registerAdapter(BangumiItemAdapter());
     Hive.registerAdapter(BangumiTagAdapter());
@@ -162,6 +162,16 @@ class GStorage {
     shieldList = await _openBoxSafe<String>('shieldList');
     searchHistory = await _openBoxSafe<SearchHistory>('searchHistory');
     downloads = await _openBoxSafe<DownloadRecord>('downloads');
+  }
+
+  static Future initPlatform() async {
+    await _prepareHivePath();
+
+    setting = await _openBoxSafe<dynamic>('setting');
+  }
+
+  static Future<void> _prepareHivePath() async {
+    _hivePath = '${(await getApplicationSupportDirectory()).path}/hive';
   }
 
   /// Open a Hive box with automatic recovery on corruption.
@@ -218,9 +228,9 @@ class GStorage {
     final hiveBoxFile = File('${appDocumentDir.path}/hive/$boxName.hive');
     if (await hiveBoxFile.exists()) {
       await hiveBoxFile.copy(backupFilePath);
-      print('Backup success: $backupFilePath');
+      KazumiLogger().i('GStorage: Backup success: $backupFilePath');
     } else {
-      print('Hive box not exists');
+      KazumiLogger().w('GStorage: Hive box does not exist: $boxName');
     }
   }
 
@@ -375,6 +385,9 @@ class SettingBoxKey {
       enableGitProxy = 'enableGitProxy',
       enableSystemProxy = 'enableSystemProxy',
       defaultStartupPage = 'defaultStartupPage',
+      platformCompletedLearningResources = 'platformCompletedLearningResources',
+      platformRagDocuments = 'platformRagDocuments',
+      platformRelaxSessions = 'platformRelaxSessions',
 
       /// Deprecated
       isWideScreen = 'isWideScreen',

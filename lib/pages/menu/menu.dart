@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
+import 'package:kazumi/pages/platform/platform_native_control_area.dart';
 import 'package:kazumi/pages/router.dart';
-import 'package:kazumi/utils/storage.dart';
+import 'package:kazumi/utils/platform_storage.dart';
 import 'package:provider/provider.dart';
 
 class ScaffoldMenu extends StatefulWidget {
@@ -24,18 +24,19 @@ class NavigationBarState extends ChangeNotifier {
   bool get isBottom => _isBottom;
 
   int getDefaultSelectedIndex() {
-    final defaultPage = GStorage.setting
-        .get(SettingBoxKey.defaultStartupPage, defaultValue: "/tab/popular/");
+    final defaultPage =
+        normalizePlatformStartupPath(PlatformStorage.setting.get(
+      PlatformSettingKey.defaultStartupPage,
+      defaultValue: defaultPlatformStartupPath,
+    ));
 
     switch (defaultPage) {
-      case "/tab/popular/":
+      case "/tab/learning/":
         return 0;
-      case "/tab/timeline/":
+      case "/tab/coding/":
         return 1;
-      case "/tab/collect/":
+      case "/tab/relax/":
         return 2;
-      case "/tab/my/":
-        return 3;
       default:
         return 0;
     }
@@ -96,24 +97,19 @@ class _ScaffoldMenu extends State<ScaffoldMenu> {
             : NavigationBar(
                 destinations: const <Widget>[
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.home),
-                    icon: Icon(Icons.home_outlined),
-                    label: '推荐',
+                    selectedIcon: Icon(Icons.school),
+                    icon: Icon(Icons.school_outlined),
+                    label: '资料',
                   ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.timeline),
-                    icon: Icon(Icons.timeline_outlined),
-                    label: '时间表',
+                    selectedIcon: Icon(Icons.code),
+                    icon: Icon(Icons.code_outlined),
+                    label: '编程',
                   ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.favorite),
-                    icon: Icon(Icons.favorite_outlined),
-                    label: '追番',
-                  ),
-                  NavigationDestination(
-                    selectedIcon: Icon(Icons.settings),
-                    icon: Icon(Icons.settings),
-                    label: '我的',
+                    selectedIcon: Icon(Icons.spa),
+                    icon: Icon(Icons.spa_outlined),
+                    label: '放松',
                   ),
                 ],
                 selectedIndex: state.selectedIndex,
@@ -129,41 +125,32 @@ class _ScaffoldMenu extends State<ScaffoldMenu> {
       backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
       body: Row(
         children: [
-          EmbeddedNativeControlArea(
+          PlatformNativeControlArea(
             child: Visibility(
               visible: !state.isHide,
               child: NavigationRail(
                 backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                 groupAlignment: 1.0,
-                leading: FloatingActionButton(
-                  elevation: 0,
-                  heroTag: null,
-                  onPressed: () {
-                    Modular.to.pushNamed('/search/');
-                  },
-                  child: const Icon(Icons.search),
+                leading: const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Icon(Icons.terminal, size: 28),
                 ),
                 labelType: NavigationRailLabelType.selected,
                 destinations: const <NavigationRailDestination>[
                   NavigationRailDestination(
-                    selectedIcon: Icon(Icons.home),
-                    icon: Icon(Icons.home_outlined),
-                    label: Text('推荐'),
+                    selectedIcon: Icon(Icons.school),
+                    icon: Icon(Icons.school_outlined),
+                    label: Text('资料'),
                   ),
                   NavigationRailDestination(
-                    selectedIcon: Icon(Icons.timeline),
-                    icon: Icon(Icons.timeline_outlined),
-                    label: Text('时间表'),
+                    selectedIcon: Icon(Icons.code),
+                    icon: Icon(Icons.code_outlined),
+                    label: Text('编程'),
                   ),
                   NavigationRailDestination(
-                    selectedIcon: Icon(Icons.favorite),
-                    icon: Icon(Icons.favorite_border),
-                    label: Text('追番'),
-                  ),
-                  NavigationRailDestination(
-                    selectedIcon: Icon(Icons.settings),
-                    icon: Icon(Icons.settings_outlined),
-                    label: Text('我的'),
+                    selectedIcon: Icon(Icons.spa),
+                    icon: Icon(Icons.spa_outlined),
+                    label: Text('放松'),
                   ),
                 ],
                 selectedIndex: state.selectedIndex,

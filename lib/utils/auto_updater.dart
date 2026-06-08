@@ -796,7 +796,7 @@ class AutoUpdater {
     } else if (Platform.isAndroid) {
       extension = '.apk';
     }
-    return 'Kazumi-$version$extension';
+    return 'everyone_is_programmer-$version$extension';
   }
 
   /// 从 assets 中获取文件的哈希值

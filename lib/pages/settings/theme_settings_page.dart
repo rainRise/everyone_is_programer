@@ -1,16 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/bean/card/palette_card.dart';
-import 'package:kazumi/utils/constants.dart';
-import 'package:kazumi/utils/storage.dart';
+import 'package:kazumi/pages/platform/platform_palette_card.dart';
+import 'package:kazumi/pages/platform/platform_theme_tokens.dart';
+import 'package:kazumi/utils/platform_storage.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:kazumi/bean/dialog/dialog_helper.dart';
-import 'package:kazumi/bean/settings/theme_provider.dart';
-import 'package:kazumi/pages/popular/popular_controller.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
-import 'package:kazumi/bean/settings/color_type.dart';
-import 'package:kazumi/utils/utils.dart';
+import 'package:kazumi/pages/platform/platform_dialog.dart';
+import 'package:kazumi/pages/platform/platform_app_bar.dart';
+import 'package:kazumi/pages/platform/platform_theme_colors.dart';
+import 'package:kazumi/pages/platform/platform_theme_provider.dart';
+import 'package:kazumi/utils/platform_utils.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -23,7 +22,7 @@ class ThemeSettingsPage extends StatefulWidget {
 }
 
 class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
-  Box setting = GStorage.setting;
+  Box setting = PlatformStorage.setting;
   late dynamic defaultDanmakuArea;
   late dynamic defaultThemeMode;
   late dynamic defaultThemeColor;
@@ -31,30 +30,30 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late bool useDynamicColor;
   late bool showWindowButton;
   late bool useSystemFont;
-  final PopularController popularController = Modular.get<PopularController>();
-  late final ThemeProvider themeProvider;
+  late final PlatformThemeProvider themeProvider;
   final MenuController menuController = MenuController();
 
   @override
   void initState() {
     super.initState();
     defaultThemeMode =
-        setting.get(SettingBoxKey.themeMode, defaultValue: 'system');
+        setting.get(PlatformSettingKey.themeMode, defaultValue: 'system');
     defaultThemeColor =
-        setting.get(SettingBoxKey.themeColor, defaultValue: 'default');
-    oledEnhance = setting.get(SettingBoxKey.oledEnhance, defaultValue: false);
+        setting.get(PlatformSettingKey.themeColor, defaultValue: 'default');
+    oledEnhance =
+        setting.get(PlatformSettingKey.oledEnhance, defaultValue: false);
     useDynamicColor =
-        setting.get(SettingBoxKey.useDynamicColor, defaultValue: false);
+        setting.get(PlatformSettingKey.useDynamicColor, defaultValue: false);
     showWindowButton =
-        setting.get(SettingBoxKey.showWindowButton, defaultValue: false);
+        setting.get(PlatformSettingKey.showWindowButton, defaultValue: false);
     useSystemFont =
-        setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
-    themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+        setting.get(PlatformSettingKey.useSystemFont, defaultValue: false);
+    themeProvider = Provider.of<PlatformThemeProvider>(context, listen: false);
   }
 
   void onBackPressed(BuildContext context) {
-    if (KazumiDialog.observer.hasKazumiDialog) {
-      KazumiDialog.dismiss();
+    if (PlatformDialog.observer.hasPlatformDialog) {
+      PlatformDialog.dismiss();
       return;
     }
   }
@@ -65,23 +64,23 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         fontFamily: themeProvider.currentFontFamily,
         brightness: Brightness.dark,
         colorSchemeSeed: color,
-        progressIndicatorTheme: progressIndicatorTheme2024,
-        sliderTheme: sliderTheme2024,
-        pageTransitionsTheme: pageTransitionsTheme2024);
-    var oledDarkTheme = Utils.oledDarkTheme(defaultDarkTheme);
+        progressIndicatorTheme: platformProgressIndicatorTheme,
+        sliderTheme: platformSliderTheme,
+        pageTransitionsTheme: platformPageTransitionsTheme);
+    var oledDarkTheme = PlatformUtils.oledDarkTheme(defaultDarkTheme);
     themeProvider.setTheme(
       ThemeData(
           useMaterial3: true,
           fontFamily: themeProvider.currentFontFamily,
           brightness: Brightness.light,
           colorSchemeSeed: color,
-          progressIndicatorTheme: progressIndicatorTheme2024,
-          sliderTheme: sliderTheme2024,
-          pageTransitionsTheme: pageTransitionsTheme2024),
+          progressIndicatorTheme: platformProgressIndicatorTheme,
+          sliderTheme: platformSliderTheme,
+          pageTransitionsTheme: platformPageTransitionsTheme),
       oledEnhance ? oledDarkTheme : defaultDarkTheme,
     );
-    defaultThemeColor = color?.value.toRadixString(16) ?? 'default';
-    setting.put(SettingBoxKey.themeColor, defaultThemeColor);
+    defaultThemeColor = color?.toARGB32().toRadixString(16) ?? 'default';
+    setting.put(PlatformSettingKey.themeColor, defaultThemeColor);
   }
 
   void resetTheme() {
@@ -90,23 +89,23 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         fontFamily: themeProvider.currentFontFamily,
         brightness: Brightness.dark,
         colorSchemeSeed: Colors.green,
-        progressIndicatorTheme: progressIndicatorTheme2024,
-        sliderTheme: sliderTheme2024,
-        pageTransitionsTheme: pageTransitionsTheme2024);
-    var oledDarkTheme = Utils.oledDarkTheme(defaultDarkTheme);
+        progressIndicatorTheme: platformProgressIndicatorTheme,
+        sliderTheme: platformSliderTheme,
+        pageTransitionsTheme: platformPageTransitionsTheme);
+    var oledDarkTheme = PlatformUtils.oledDarkTheme(defaultDarkTheme);
     themeProvider.setTheme(
       ThemeData(
           useMaterial3: true,
           fontFamily: themeProvider.currentFontFamily,
           brightness: Brightness.light,
           colorSchemeSeed: Colors.green,
-          progressIndicatorTheme: progressIndicatorTheme2024,
-          sliderTheme: sliderTheme2024,
-          pageTransitionsTheme: pageTransitionsTheme2024),
+          progressIndicatorTheme: platformProgressIndicatorTheme,
+          sliderTheme: platformSliderTheme,
+          pageTransitionsTheme: platformPageTransitionsTheme),
       oledEnhance ? oledDarkTheme : defaultDarkTheme,
     );
     defaultThemeColor = 'default';
-    setting.put(SettingBoxKey.themeColor, 'default');
+    setting.put(PlatformSettingKey.themeColor, 'default');
   }
 
   void updateTheme(String theme) async {
@@ -119,20 +118,22 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
     if (theme == 'system') {
       themeProvider.setThemeMode(ThemeMode.system);
     }
-    await setting.put(SettingBoxKey.themeMode, theme);
+    await setting.put(PlatformSettingKey.themeMode, theme);
     setState(() {
       defaultThemeMode = theme;
     });
 
     // Update Windows title bar theme
     if (Platform.isWindows) {
-      await windowManager.setBrightness(themeProvider.isEffectiveDark() ? Brightness.dark : Brightness.light);
+      await windowManager.setBrightness(
+          themeProvider.isEffectiveDark() ? Brightness.dark : Brightness.light);
     }
   }
 
   void updateOledEnhance() {
     dynamic color;
-    oledEnhance = setting.get(SettingBoxKey.oledEnhance, defaultValue: false);
+    oledEnhance =
+        setting.get(PlatformSettingKey.oledEnhance, defaultValue: false);
     if (defaultThemeColor == 'default') {
       color = Colors.green;
     } else {
@@ -150,7 +151,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: const SysAppBar(title: Text('外观设置')),
+        appBar: const PlatformAppBar(title: Text('外观设置')),
         body: SettingsList(
           maxWidth: 1000,
           sections: [
@@ -278,18 +279,18 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 SettingsTile.navigation(
                   enabled: !useDynamicColor,
                   onPressed: (_) async {
-                    KazumiDialog.show(builder: (context) {
+                    PlatformDialog.show(builder: (context) {
                       return AlertDialog(
                         title: Text('配色方案',
                             style: TextStyle(fontFamily: fontFamily)),
                         content: StatefulBuilder(builder:
                             (BuildContext context, StateSetter setState) {
                           final List<Map<String, dynamic>> colorThemes =
-                              colorThemeTypes;
+                              platformColorThemeTypes;
                           return Wrap(
                             alignment: WrapAlignment.center,
                             spacing: 8,
-                            runSpacing: Utils.isDesktop() ? 8 : 0,
+                            runSpacing: PlatformUtils.isDesktop() ? 8 : 0,
                             children: [
                               ...colorThemes.map(
                                 (e) {
@@ -299,11 +300,11 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                                       index == 0
                                           ? resetTheme()
                                           : setTheme(e['color']);
-                                      KazumiDialog.dismiss();
+                                      PlatformDialog.dismiss();
                                     },
                                     child: Column(
                                       children: [
-                                        PaletteCard(
+                                        PlatformPaletteCard(
                                           color: e['color'],
                                           selected: (e['color']
                                                       .value
@@ -331,7 +332,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                   onToggle: (value) async {
                     useDynamicColor = value ?? !useDynamicColor;
                     await setting.put(
-                        SettingBoxKey.useDynamicColor, useDynamicColor);
+                        PlatformSettingKey.useDynamicColor, useDynamicColor);
                     themeProvider.setDynamic(useDynamicColor);
                     setState(() {});
                   },
@@ -342,7 +343,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                   onToggle: (value) async {
                     useSystemFont = value ?? !useSystemFont;
                     await setting.put(
-                        SettingBoxKey.useSystemFont, useSystemFont);
+                        PlatformSettingKey.useSystemFont, useSystemFont);
                     themeProvider.setFontFamily(useSystemFont);
                     dynamic color;
                     if (defaultThemeColor == 'default') {
@@ -368,7 +369,8 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 SettingsTile.switchTile(
                   onToggle: (value) async {
                     oledEnhance = value ?? !oledEnhance;
-                    await setting.put(SettingBoxKey.oledEnhance, oledEnhance);
+                    await setting.put(
+                        PlatformSettingKey.oledEnhance, oledEnhance);
                     updateOledEnhance();
                     setState(() {});
                   },
@@ -380,14 +382,14 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 ),
               ],
             ),
-            if (Utils.isDesktop())
+            if (PlatformUtils.isDesktop())
               SettingsSection(
                 tiles: [
                   SettingsTile.switchTile(
                     onToggle: (value) async {
                       showWindowButton = value ?? !showWindowButton;
-                      await setting.put(
-                          SettingBoxKey.showWindowButton, showWindowButton);
+                      await setting.put(PlatformSettingKey.showWindowButton,
+                          showWindowButton);
                       setState(() {});
                     },
                     title: Text('使用系统标题栏',

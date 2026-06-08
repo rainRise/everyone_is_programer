@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:kazumi/bean/dialog/dialog_helper.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/pages/platform/platform_dialog.dart';
 import 'package:flutter/services.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/pages/platform/platform_app_bar.dart';
+import 'package:kazumi/utils/logger.dart';
 
 class LogsPage extends StatefulWidget {
   const LogsPage({super.key});
@@ -16,11 +16,11 @@ class LogsPage extends StatefulWidget {
 class _LogsPageState extends State<LogsPage> {
   final List<String> _logLines = [];
   final ScrollController _scrollController = ScrollController();
-  
+
   bool _isLoading = true;
   bool _hasError = false;
   String _fullContent = '';
-  
+
   static const int _initialLoadCount = 50;
   static const int _loadMoreCount = 100;
   int _displayedLines = 0;
@@ -44,11 +44,11 @@ class _LogsPageState extends State<LogsPage> {
     if (!mounted || _displayedLines >= _allLines.length) {
       return;
     }
-    
+
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
     final threshold = maxScroll * 0.8;
-    
+
     if (currentScroll >= threshold) {
       _loadMoreLines();
     }
@@ -56,22 +56,22 @@ class _LogsPageState extends State<LogsPage> {
 
   Future<void> _loadLogs() async {
     if (!mounted) return;
-    
+
     try {
       final file = await _getLogsFile();
       if (!mounted) return;
-      
+
       if (await file.exists()) {
         final content = await file.readAsString();
         if (!mounted) return;
-        
+
         _allLines = content.split('\n');
         _fullContent = content;
-        
-        final initialCount = _allLines.length < _initialLoadCount 
-            ? _allLines.length 
+
+        final initialCount = _allLines.length < _initialLoadCount
+            ? _allLines.length
             : _initialLoadCount;
-        
+
         if (!mounted) return;
         setState(() {
           _logLines.clear();
@@ -98,18 +98,17 @@ class _LogsPageState extends State<LogsPage> {
     if (_displayedLines >= _allLines.length) {
       return;
     }
-    
+
     // 使用 Future.microtask 避免在构建过程中调用 setState
     Future.microtask(() {
       if (!mounted) return;
-      
+
       final remainingLines = _allLines.length - _displayedLines;
-      final linesToLoad = remainingLines < _loadMoreCount 
-          ? remainingLines 
-          : _loadMoreCount;
-      
+      final linesToLoad =
+          remainingLines < _loadMoreCount ? remainingLines : _loadMoreCount;
+
       final newLines = _allLines.skip(_displayedLines).take(linesToLoad);
-      
+
       if (!mounted) return;
       setState(() {
         _logLines.addAll(newLines);
@@ -119,17 +118,18 @@ class _LogsPageState extends State<LogsPage> {
   }
 
   Future<File> _getLogsFile() async {
-    final directory = await getApplicationSupportDirectory();
-    final path = directory.path;
-    return File('$path/logs/kazumi_logs.log');
+    return getLogsPath();
   }
 
   Future<void> _clearLogs() async {
     try {
-      final file = await _getLogsFile();
-      await file.writeAsString('');
+      final didClear = await clearLogs();
       if (!mounted) return;
-      
+      if (!didClear) {
+        PlatformDialog.showToast(message: '娓呯┖澶辫触');
+        return;
+      }
+
       setState(() {
         _logLines.clear();
         _allLines.clear();
@@ -138,7 +138,7 @@ class _LogsPageState extends State<LogsPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      KazumiDialog.showToast(message: '清空失败: $e');
+      PlatformDialog.showToast(message: '清空失败: $e');
     }
   }
 
@@ -146,17 +146,17 @@ class _LogsPageState extends State<LogsPage> {
     try {
       await Clipboard.setData(ClipboardData(text: _fullContent));
       if (!mounted) return;
-      KazumiDialog.showToast(message: '已复制到剪贴板');
+      PlatformDialog.showToast(message: '已复制到剪贴板');
     } catch (e) {
       if (!mounted) return;
-      KazumiDialog.showToast(message: '复制失败: $e');
+      PlatformDialog.showToast(message: '复制失败: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const SysAppBar(
+      appBar: const PlatformAppBar(
         title: Text('日志'),
       ),
       body: buildBody,
@@ -170,19 +170,19 @@ class _LogsPageState extends State<LogsPage> {
         child: CircularProgressIndicator(),
       );
     }
-    
+
     if (_hasError) {
       return const Center(
         child: Text('加载日志失败'),
       );
     }
-    
+
     if (_logLines.isEmpty) {
       return const Center(
         child: Text('没有数据'),
       );
     }
-    
+
     return SelectionArea(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
