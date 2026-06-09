@@ -99,6 +99,7 @@ void main() {
       completedResourceIds: {resources.single.id},
       keyword: ' rag ',
       selectedType: PlatformResourceType.mcp,
+      completionFilterLabel: '已完成',
       generatedAt: DateTime(2026, 1, 3, 9, 30),
     );
 
@@ -106,12 +107,30 @@ void main() {
     expect(markdown, contains('- 生成时间：2026-01-03 09:30'));
     expect(markdown, contains('- 筛选关键词：rag'));
     expect(markdown, contains('- 资源类型：MCP'));
+    expect(markdown, contains('- 完成状态：已完成'));
     expect(markdown, contains('- 匹配资源：1'));
     expect(markdown, contains('- 已完成：1'));
+    expect(markdown, contains('- 难度分布：常用 1'));
     expect(markdown, contains('## 资源列表'));
+    expect(markdown, contains('- \u672a\u5b8c\u6210\uff1a0'));
+    expect(markdown, contains('- \u5b8c\u6210\u7387\uff1a100%'));
     expect(markdown, contains('1. Context7'));
     expect(markdown, contains('- 状态：已完成'));
     expect(markdown, contains('- 入口：local://mcp/context7'));
+  });
+
+  test('learning resource catalog markdown summarizes empty level counts', () {
+    final markdown = buildLearningResourceCatalogMarkdown(
+      resources: const [],
+      completedResourceIds: const {},
+      completionFilterLabel: '未完成',
+      generatedAt: DateTime(2026, 1, 3, 9, 30),
+    );
+
+    expect(markdown, contains('- 匹配资源：0'));
+    expect(markdown, contains('- 类型分布：无'));
+    expect(markdown, contains('- 难度分布：无'));
+    expect(markdown, contains('暂无匹配的学习资源。'));
   });
 
   test('learning catalog includes expanded platform resource coverage', () {

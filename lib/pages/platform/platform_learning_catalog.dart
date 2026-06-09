@@ -580,21 +580,29 @@ String buildLearningResourceCatalogMarkdown({
   required Set<String> completedResourceIds,
   String keyword = '',
   PlatformResourceType? selectedType,
+  String completionFilterLabel = '全部状态',
+  String sortLabel = '目录顺序',
   DateTime? generatedAt,
 }) {
   final resourceList = resources.toList(growable: false);
   final generatedTime = generatedAt ?? DateTime.now();
   final normalizedKeyword = keyword.trim();
   final typeCounts = <String, int>{};
+  final levelCounts = <String, int>{};
   var completedCount = 0;
 
   for (final resource in resourceList) {
     typeCounts.update(resource.type.label, (count) => count + 1,
         ifAbsent: () => 1);
+    levelCounts.update(resource.level, (count) => count + 1, ifAbsent: () => 1);
     if (completedResourceIds.contains(resource.id)) {
       completedCount++;
     }
   }
+  final incompleteCount = resourceList.length - completedCount;
+  final completionRate = resourceList.isEmpty
+      ? '0%'
+      : '${((completedCount / resourceList.length) * 100).round()}%';
 
   final buffer = StringBuffer()
     ..writeln('# 学习资源清单')
@@ -602,9 +610,16 @@ String buildLearningResourceCatalogMarkdown({
     ..writeln('- 生成时间：${_formatLearningCatalogTimestamp(generatedTime)}')
     ..writeln('- 筛选关键词：${normalizedKeyword.isEmpty ? '全部' : normalizedKeyword}')
     ..writeln('- 资源类型：${selectedType?.label ?? '全部'}')
+    ..writeln('- 完成状态：$completionFilterLabel')
+    ..writeln('- 排序方式：$sortLabel')
     ..writeln('- 匹配资源：${resourceList.length}')
     ..writeln('- 已完成：$completedCount')
-    ..writeln('- 类型分布：${_formatLearningCatalogTypeCounts(typeCounts)}');
+    ..writeln('- 类型分布：${_formatLearningCatalogCounts(typeCounts)}')
+    ..writeln('- 难度分布：${_formatLearningCatalogCounts(levelCounts)}');
+
+  buffer
+    ..writeln('- \u672a\u5b8c\u6210\uff1a$incompleteCount')
+    ..writeln('- \u5b8c\u6210\u7387\uff1a$completionRate');
 
   if (resourceList.isEmpty) {
     buffer
@@ -640,7 +655,7 @@ String _formatLearningCatalogTimestamp(DateTime value) {
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
 
-String _formatLearningCatalogTypeCounts(Map<String, int> counts) {
+String _formatLearningCatalogCounts(Map<String, int> counts) {
   if (counts.isEmpty) return '无';
   final entries = counts.entries.toList()
     ..sort((a, b) {

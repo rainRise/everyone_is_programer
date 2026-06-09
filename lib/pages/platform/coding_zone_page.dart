@@ -1002,6 +1002,11 @@ class _ReportHistoryPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            Text(
+              formatCodeAuditReportHistoryFilterSummary(reports),
+              key: const ValueKey('code-audit-report-history-filter-summary'),
+            ),
+            const SizedBox(height: 10),
             if (reports.isEmpty)
               Text(selectedFilter.emptyMessage)
             else
@@ -1099,6 +1104,12 @@ class _AiAuditRequestPanel extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(draft.contextSummary),
+            const SizedBox(height: 4),
+            Text(draft.riskDigest),
+            const SizedBox(height: 4),
+            Text(draft.locationDigest),
+            const SizedBox(height: 4),
+            Text(draft.ruleDigest),
             const SizedBox(height: 10),
             Text(
               '当前不会调用远程模型；复制草稿后可交给外部 AI 复核，后续可替换为真实接口。',

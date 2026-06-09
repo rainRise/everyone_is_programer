@@ -79,6 +79,18 @@ class RecommendedLearningResource {
   final String reason;
 }
 
+class LearningRecommendationScoreSummary {
+  const LearningRecommendationScoreSummary({
+    required this.topScore,
+    required this.lowestScore,
+    required this.averageScore,
+  });
+
+  final int topScore;
+  final int lowestScore;
+  final String averageScore;
+}
+
 const recommendationPipelineStages = [
   '候选召回',
   '粗排过滤',
@@ -130,13 +142,37 @@ String buildLearningRecommendationMarkdown({
 }) {
   final recommendationList = recommendations.toList(growable: false);
   final generatedTime = generatedAt ?? DateTime.now();
+  final scoreSummary =
+      summarizeLearningRecommendationScores(recommendationList);
+
   final buffer = StringBuffer()
     ..writeln('# 学习推荐清单')
     ..writeln()
     ..writeln('- 生成时间：${_formatRecommendationTimestamp(generatedTime)}')
     ..writeln('- 学习目标：${goal.label}')
     ..writeln('- 已完成资源：${completedResourceIds.length}')
-    ..writeln('- 推荐数量：${recommendationList.length}');
+    ..writeln('- 推荐数量：${recommendationList.length}')
+    ..writeln(
+        '- \u6e05\u5355\u72b6\u6001\uff1a${formatLearningRecommendationListStatus(
+      recommendations: recommendationList,
+      completedResourceIds: completedResourceIds,
+    )}')
+    ..writeln(
+        '- \u9996\u63a8\u8d44\u6e90\uff1a${formatLearningRecommendationTopResource(recommendationList)}');
+
+  buffer
+    ..writeln('- \u6700\u9ad8\u6392\u5e8f\u5206\uff1a${scoreSummary.topScore}')
+    ..writeln(
+        '- \u6700\u4f4e\u6392\u5e8f\u5206\uff1a${scoreSummary.lowestScore}')
+    ..writeln(
+        '- \u5e73\u5747\u6392\u5e8f\u5206\uff1a${scoreSummary.averageScore}')
+    ..writeln(
+        '- \u7c7b\u578b\u5206\u5e03\uff1a${formatLearningRecommendationTypeDistribution(recommendationList)}')
+    ..writeln(
+        '- \u96be\u5ea6\u5206\u5e03\uff1a${formatLearningRecommendationDifficultyDistribution(recommendationList)}')
+    ..writeln(
+        '- \u4e3b\u9898\u5206\u5e03\uff1a${formatLearningRecommendationTopicDistribution(recommendationList)}')
+    ..writeln('- ${formatLearningRecommendationPipelineSummary()}');
 
   if (recommendationList.isEmpty) {
     buffer
@@ -166,10 +202,132 @@ String buildLearningRecommendationMarkdown({
   return buffer.toString().trimRight();
 }
 
+LearningRecommendationScoreSummary summarizeLearningRecommendationScores(
+  Iterable<RecommendedLearningResource> recommendations,
+) {
+  final recommendationList = recommendations.toList(growable: false);
+  var totalScore = 0;
+  var topScore = 0;
+  int? lowestScore;
+
+  for (final recommendation in recommendationList) {
+    final score = recommendation.score;
+    totalScore += score;
+    if (score > topScore) topScore = score;
+    if (lowestScore == null || score < lowestScore) lowestScore = score;
+  }
+
+  return LearningRecommendationScoreSummary(
+    topScore: topScore,
+    lowestScore: lowestScore ?? 0,
+    averageScore: recommendationList.isEmpty
+        ? '0.0'
+        : (totalScore / recommendationList.length).toStringAsFixed(1),
+  );
+}
+
+String formatLearningRecommendationScoreSummary(
+  Iterable<RecommendedLearningResource> recommendations,
+) {
+  final summary = summarizeLearningRecommendationScores(recommendations);
+  return '\u6700\u9ad8\u6392\u5e8f\u5206\uff1a${summary.topScore} / '
+      '\u6700\u4f4e\u6392\u5e8f\u5206\uff1a${summary.lowestScore} / '
+      '\u5e73\u5747\u6392\u5e8f\u5206\uff1a${summary.averageScore}';
+}
+
+String formatLearningRecommendationListStatus({
+  required Iterable<RecommendedLearningResource> recommendations,
+  Set<String> completedResourceIds = const {},
+}) {
+  return '\u5df2\u5b8c\u6210\u8d44\u6e90\uff1a${completedResourceIds.length} / '
+      '\u5f53\u524d\u63a8\u8350\uff1a${recommendations.length}';
+}
+
+String formatLearningRecommendationTopResource(
+  Iterable<RecommendedLearningResource> recommendations,
+) {
+  final recommendationList = recommendations.toList(growable: false);
+  if (recommendationList.isEmpty) return '\u65e0';
+  final topRecommendation = recommendationList.first;
+  return '${topRecommendation.resource.title} / '
+      '\u6392\u5e8f\u5206\uff1a${topRecommendation.score}';
+}
+
+String formatLearningRecommendationTypeDistribution(
+  Iterable<RecommendedLearningResource> recommendations,
+) {
+  final typeCounts = <String, int>{};
+  for (final recommendation in recommendations) {
+    typeCounts.update(
+      recommendation.resource.type.label,
+      (count) => count + 1,
+      ifAbsent: () => 1,
+    );
+  }
+  return _formatRecommendationCounts(typeCounts);
+}
+
+String formatLearningRecommendationDifficultyDistribution(
+  Iterable<RecommendedLearningResource> recommendations,
+) {
+  final levelCounts = <String, int>{};
+  for (final recommendation in recommendations) {
+    levelCounts.update(
+      recommendation.resource.level,
+      (count) => count + 1,
+      ifAbsent: () => 1,
+    );
+  }
+  return _formatRecommendationCounts(levelCounts);
+}
+
+String formatLearningRecommendationResourceStructure(
+  Iterable<RecommendedLearningResource> recommendations,
+) {
+  final recommendationList = recommendations.toList(growable: false);
+  return '\u7c7b\u578b\u5206\u5e03\uff1a'
+      '${formatLearningRecommendationTypeDistribution(recommendationList)} / '
+      '\u96be\u5ea6\u5206\u5e03\uff1a'
+      '${formatLearningRecommendationDifficultyDistribution(recommendationList)}';
+}
+
+String formatLearningRecommendationPipelineSummary() {
+  return '\u63a8\u8350\u6d41\u7a0b\uff1a'
+      '${recommendationPipelineStages.join(' -> ')} / '
+      '\u9636\u6bb5\u6570\uff1a${recommendationPipelineStages.length}';
+}
+
+String formatLearningRecommendationTopicDistribution(
+  Iterable<RecommendedLearningResource> recommendations,
+) {
+  final tagCounts = <String, int>{};
+  for (final recommendation in recommendations) {
+    for (final tag in recommendation.resource.tags) {
+      tagCounts.update(
+        tag,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+    }
+  }
+  return _formatRecommendationCounts(tagCounts);
+}
+
 String _formatRecommendationTimestamp(DateTime value) {
   String twoDigits(int number) => number.toString().padLeft(2, '0');
   return '${value.year}-${twoDigits(value.month)}-${twoDigits(value.day)} '
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
+}
+
+String _formatRecommendationCounts(Map<String, int> counts) {
+  if (counts.isEmpty) return '\u65e0';
+  final entries = counts.entries.toList()
+    ..sort((a, b) {
+      final countCompare = b.value.compareTo(a.value);
+      if (countCompare != 0) return countCompare;
+      return a.key.compareTo(b.key);
+    });
+  return entries.map((entry) => '${entry.key} ${entry.value}').join('\u3001');
 }
 
 int _scoreResourceForGoal(

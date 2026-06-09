@@ -3514,6 +3514,8 @@ D:\SoftWare\flutter_windows_3.44.0-stable\flutter\bin\cache\dart-sdk\bin\dart.ex
 - `flutter test test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
 - `dart analyze lib\pages\platform\platform_relax_session_repository.dart lib\pages\platform\relax_zone_page.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
 
+**Result:** Passed. Formatter reported 4 files formatted with 0 changed files. Targeted relax session repository and platform zone widget tests passed with 32 tests, including the new single-record Markdown copy flow. Targeted analysis reported no issues.
+
 **Result:** Passed. Formatter completed successfully with 0 changed files. Targeted relax session repository and zone widget tests passed with 16 tests. Targeted analysis reported no issues.
 
 ### Step 136: Code Audit Report History UI Filter
@@ -3941,4 +3943,1331 @@ D:\SoftWare\flutter_windows_3.44.0-stable\flutter\bin\cache\dart-sdk\bin\dart.ex
 - `flutter test test\platform_zones_test.dart`
 - `dart analyze lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
 
+### Step 161: Learning Resource Catalog Sort
+
+**Operation:** Added sorting controls for the learning resource catalog.
+
+**Why:** Keyword, type, and completion filters help narrow the catalog, but users still need predictable ordering when exporting a study list or prioritizing unfinished materials. Sorting keeps the visible catalog and copied Markdown in the same order.
+
+**Feature Goal:** Let users sort the visible learning catalog by original catalog order, title, or unfinished-first order, and preserve that order in copied catalog Markdown.
+
+**Files Modified:**
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added a private `_LearningResourceSort` enum with `目录顺序` / `标题 A-Z` / `未完成优先` options.
+
+**Operation:** Added a `资源排序` popup menu beside the resource catalog title and applied the selected sort after keyword/type/completion filtering.
+
+**Operation:** Added widget coverage that selects `标题 A-Z`, copies the current resource catalog, and verifies the exported Markdown starts with the title-sorted resources.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+
 **Result:** Passed. Formatter updated `lib/pages/platform/learning_zone_page.dart`. Platform zone widget tests passed with 22 tests, including the new learning progress clear-undo flow. Targeted analysis reported no issues.
+
+### Step 152: Filtered Learning Resource Catalog Markdown
+
+**Operation:** Added Markdown export for the currently filtered learning resource catalog.
+
+**Why:** The learning zone could search and filter resources, copy individual entries/guides, export progress, and export recommendations. Users still had no one-click way to move the current resource view into notes, a study plan, or an AI prompt. Exporting the filtered catalog makes the search/type filter workflow reusable outside the app.
+
+**Feature Goal:** Let users copy the visible resource catalog as a Markdown artifact that preserves the current keyword, resource type filter, match count, completion status, tags, descriptions, and entry links.
+
+**Files Modified:**
+- `lib/pages/platform/platform_learning_catalog.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_learning_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added `buildLearningResourceCatalogMarkdown`, summarizing filtered resources with generated time, keyword/type filter, match count, completed count, type distribution, and per-resource metadata.
+
+**Operation:** Added a `复制当前资源清单` action beside the learning resource catalog heading, copying the current filtered resource list and showing snackbar feedback.
+
+**Operation:** Added catalog coverage for filtered resource Markdown and widget coverage that filters to `Context7` + `MCP`, copies the current catalog, and verifies the copied Markdown reflects the filtered view and completed status.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_learning_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_learning_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 files formatted with 0 changed files. Targeted learning catalog and platform zone widget tests passed with 29 tests, including the new filtered resource catalog export flow. Targeted analysis reported no issues.
+
+### Step 153: Complete Recommended Learning Resources
+
+**Operation:** Added a direct completion action to learning recommendation entries.
+
+**Why:** Step 142 made recommendations progress-aware, but completing a recommended resource still required users to scroll back to the resource catalog and tick the matching card. A recommendation panel should behave like a next-step list: when a user finishes an item, they can mark it done in place and immediately see the next recommendation set.
+
+**Feature Goal:** Let users mark a recommended resource complete directly from the recommendation panel, persist the learning progress, show feedback, and remove the completed resource from the progress-aware recommendation list.
+
+**Files Modified:**
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added `_completeRecommendedResource`, reusing the existing progress save path and showing snackbar feedback after a recommendation is completed.
+
+**Operation:** Added a `标记推荐资源完成` icon action to each recommendation tile and wired it through `_RecommendationPanel` to the learning zone state.
+
+**Operation:** Added widget coverage that switches to the recommendation goal, completes the top recommendation from the recommendation tile, verifies the tile disappears, and checks the completed resource id is persisted.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 2 files formatted with 0 changed files. Platform zone widget tests passed with 24 tests, including the new direct recommendation completion flow. Targeted analysis reported no issues.
+
+### Step 154: Undo Recommended Resource Completion
+
+**Operation:** Added snackbar undo after completing a recommended learning resource.
+
+**Why:** Step 153 let users complete recommended resources in place, but that action immediately removes the item from the next-step list. A mistaken tap should not force users to find the same resource in the full catalog and manually uncheck it.
+
+**Feature Goal:** Let users undo a just-completed recommendation from the snackbar, restore the resource to the progress-aware recommendation list, and keep persisted learning progress in sync.
+
+**Files Modified:**
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added `_undoRecommendedResourceCompletion`, reusing `_toggleResourceCompleted(resource, false)` so undo follows the same progress persistence path as resource cards.
+
+**Operation:** Updated the recommendation completion snackbar to expose `撤销`, restoring the completed resource to the recommendation list when tapped.
+
+**Operation:** Extended widget coverage so completing a recommendation persists the completed id, tapping undo removes it from storage, and the recommendation tile returns.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `test/platform_zones_test.dart`. Platform zone widget tests passed with 24 tests, including the recommendation completion undo flow. Targeted analysis reported no issues.
+
+### Step 155: Relax Session Single Delete Undo
+
+**Operation:** Added single-record deletion with undo for relax session history.
+
+**Why:** The relax zone could record sessions, copy summaries, show rhythm distribution, and clear the whole history with undo. If a user accidentally recorded one focus/rest rhythm, the only cleanup path was clearing every record. Single-record deletion makes the history usable for routine correction without losing the rest of the review log.
+
+**Feature Goal:** Let users delete one relax session record from the history panel, persist the updated list, and restore the deleted record through snackbar `撤销`.
+
+**Files Modified:**
+- `lib/pages/platform/relax_zone_page.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added `_deleteSession` and `_restoreDeletedSession`, deleting by visible list index and reinserting the record at the original position when undo is tapped.
+
+**Operation:** Added a `删除节奏记录` action to each visible session row while keeping the existing copied summary and clear-history controls.
+
+**Operation:** Added widget coverage that records a focus session and a short break, deletes the latest record, verifies persisted storage and totals shrink, taps undo, and verifies the record and totals return.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\relax_zone_page.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\relax_zone_page.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 2 files formatted with 0 changed files. Platform zone widget tests passed with 25 tests, including the single relax-session delete undo flow. Targeted analysis reported no issues.
+
+### Step 156: Relax Session Single Record Markdown Copy
+
+**Operation:** Added one-click Markdown copy for individual relax session records.
+
+**Why:** Step 155 let users correct one mistaken focus/rest rhythm by deleting a single history entry. The next practical reuse path is copying one completed rhythm into a daily review, learning journal, or prompt without exporting the entire relax summary.
+
+**Feature Goal:** Let each visible relax session row copy its own Markdown card with generated time, completed time, rhythm title, and minutes.
+
+**Files Modified:**
+- `lib/pages/platform/platform_relax_session_repository.dart`
+- `lib/pages/platform/relax_zone_page.dart`
+- `test/platform_relax_session_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added `formatRelaxSessionRecordMarkdown`, producing a compact Markdown card for one `RelaxSessionRecord`.
+
+**Operation:** Added a `复制节奏记录` action to each visible relax history row and wired it to clipboard feedback.
+
+**Operation:** Added repository coverage for single-record Markdown formatting and widget coverage that records one focus rhythm, copies the row, and verifies clipboard content.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_relax_session_repository.dart lib\pages\platform\relax_zone_page.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_relax_session_repository.dart lib\pages\platform\relax_zone_page.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 files formatted with 0 changed files. Targeted relax session repository and platform zone widget tests passed with 32 tests, including the new single-record Markdown copy flow. Targeted analysis reported no issues.
+
+### Step 157: Relax Session History Rhythm Filter
+
+**Operation:** Added rhythm-type filters to the relax session history panel.
+
+**Why:** The relax zone can now record, copy, delete, undo, summarize, and clear rhythm history. As the list grows, users need a quick way to review only focus sessions or only rest sessions without losing the global totals and distribution context.
+
+**Feature Goal:** Let users switch the visible relax history between all records, focus records, and rest records while keeping copy/delete actions tied to the original stored session.
+
+**Files Modified:**
+- `lib/pages/platform/relax_zone_page.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added a private `_RelaxHistoryFilter` enum with `全部` / `专注` / `休息` labels and matching logic.
+
+**Operation:** Added filter chips to `_RelaxSessionHistoryPanel`, showing per-filter counts and the current filtered total minutes while preserving the overall history count and rhythm distribution.
+
+**Operation:** Changed filtered history rendering to keep each visible row paired with its original `_sessions` index so delete and undo flows still target the correct stored record.
+
+**Operation:** Added widget coverage that records focus, short rest, and long rest sessions, filters to rest records, verifies focus is hidden from the history list, deletes the first visible rest record, and confirms persisted storage removed the correct original session.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\relax_zone_page.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\relax_zone_page.dart test\platform_zones_test.dart`
+
+**Result:** Passed after narrowing one widget assertion to count the filtered history row actions instead of matching duplicated `ListTile` text descendants. Formatter reported target files already formatted. Platform zone widget tests passed with 27 tests, including the new rhythm-filter flow. Targeted analysis reported no issues.
+
+### Step 158: AI Audit Request Risk Digest
+
+**Operation:** Added severity distribution and review priority context to AI code audit request drafts.
+
+**Why:** The coding zone already exposes an AI audit placeholder and copyable request draft, but the draft treated local findings as a flat list. A stronger handoff should tell an external AI reviewer which risks are high/medium/low and which findings to review first.
+
+**Feature Goal:** Show a risk distribution summary in the AI audit panel and include both risk distribution and prioritized findings in the copied request draft.
+
+**Files Modified:**
+- `lib/pages/platform/platform_ai_audit_request.dart`
+- `lib/pages/platform/coding_zone_page.dart`
+- `test/platform_ai_audit_request_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added `riskDigest` to `CodeAuditAiRequestDraft`, summarizing high/medium/low local rule findings.
+
+**Operation:** Added a `复核优先级` section to the generated AI request prompt, sorting findings by severity, file path, and line number and listing the top items for external review.
+
+**Operation:** Displayed the risk digest directly in the AI audit request panel so users can scan the risk mix before copying the full prompt.
+
+**Operation:** Added request-generator coverage for non-empty and empty findings, plus widget coverage for the visible risk digest in the coding zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_ai_audit_request.dart lib\pages\platform\coding_zone_page.dart test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_ai_audit_request.dart lib\pages\platform\coding_zone_page.dart test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 files formatted with 0 changed files. Targeted AI audit request and platform zone widget tests passed with 29 tests, including the new risk digest and review-priority prompt coverage. Targeted analysis reported no issues.
+
+### Step 159: Learning Resource Completion Filter
+
+**Operation:** Added completion-status filtering to the learning resource catalog.
+
+**Why:** The learning zone can mark resources complete, export progress, and generate progress-aware recommendations, but the resource catalog itself still mixed completed and unfinished resources after keyword/type filtering. A study workflow needs a quick way to focus on unfinished next actions or review completed material.
+
+**Feature Goal:** Let users filter the visible learning resource catalog by all resources, unfinished resources, or completed resources, and preserve that status filter in copied catalog Markdown.
+
+**Files Modified:**
+- `lib/pages/platform/learning_zone_page.dart`
+- `lib/pages/platform/platform_learning_catalog.dart`
+- `test/platform_learning_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Added a private `_LearningCompletionFilter` enum with `全部状态` / `未完成` / `已完成` labels and completion-aware matching against persisted resource ids.
+
+**Operation:** Extended `_LearningSearchBar` with completion-status chips and applied the selected status to `_filteredResources`.
+
+**Operation:** Extended `buildLearningResourceCatalogMarkdown` with a completion filter label so exported resource lists describe keyword, type, and completion-state filters.
+
+**Operation:** Added catalog Markdown coverage for completion-state metadata and widget coverage for filtering a completed `Context7` resource out through `未完成`, restoring it through `已完成`, and exporting the completed-only catalog.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\learning_zone_page.dart lib\pages\platform\platform_learning_catalog.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\learning_zone_page.dart lib\pages\platform\platform_learning_catalog.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 files formatted with 0 changed files. Targeted learning catalog and platform zone widget tests passed with 34 tests, including the new completion-status resource filter and filtered Markdown export coverage. Targeted analysis reported no issues.
+
+### Step 160: Learning Completion Filter Counts
+
+**Operation:** Added dynamic counts to learning resource completion-status filter chips.
+
+**Why:** Step 159 added `全部状态` / `未完成` / `已完成` filters, but the chips did not show how many resources each state contained under the current keyword and type filters. Counts make the catalog easier to scan before switching filters.
+
+**Feature Goal:** Show completion-state counts that respect the current keyword and resource-type filters while keeping the selected completion-state filter behavior unchanged.
+
+**Files Modified:**
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+
+**Operation:** Split the catalog filtering into a keyword/type base list and a completion-filtered visible list.
+
+**Operation:** Computed per-state counts from the base list and rendered completion chips as `全部状态 N`, `未完成 N`, and `已完成 N`.
+
+**Operation:** Updated widget coverage to assert that a keyword-filtered completed `Context7` resource shows `全部状态 1`, `未完成 0`, and `已完成 1`, and still switches correctly between unfinished and completed views.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+
+### Step 162: Learning Catalog Visible Summary
+
+**Operation:** Added a compact visible summary above the learning resource catalog.
+
+**Why:** The catalog now supports keyword search, type filtering, completion filtering, and multiple sort modes. Users need a quick confirmation of the current visible slice before acting on the list or copying it to Markdown.
+
+**Feature Goal:** Show current match count, completed count, unfinished count, completion rate, active completion filter, and active sort mode for the visible learning catalog.
+
+**Files Modified:**
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed the completed count from the current filtered resource list and rendered `_LearningCatalogSummary` between the catalog toolbar and resource cards.
+
+**Operation:** Added keyed widget coverage for the catalog summary and completion-rate metric, including the transition from a completed-only `Context7` result to an empty unfinished result.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\learning_zone_page.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated 2 files. Targeted platform zone widget tests passed with 29 tests, including the new catalog visible summary assertions. Targeted analysis reported no issues.
+
+### Step 163: Learning Catalog Markdown Progress Summary
+
+**Operation:** Added unfinished count and completion rate to copied learning resource catalog Markdown.
+
+**Why:** Step 162 made the visible learning catalog show current matches, completed/unfinished counts, and completion rate. The copied Markdown artifact should carry the same progress summary so notes, prompts, and study logs reflect what users saw in the app.
+
+**Feature Goal:** Keep the visible catalog summary and exported learning resource catalog Markdown aligned for completed-only, unfinished-only, and mixed resource views.
+
+**Files Modified:**
+- `lib/pages/platform/platform_learning_catalog.dart`
+- `test/platform_learning_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed `incompleteCount` and `completionRate` from the filtered resource list inside `buildLearningResourceCatalogMarkdown`.
+
+**Operation:** Wrote the new progress fields into the copied Markdown summary before empty-state or resource-list rendering.
+
+**Operation:** Added catalog-builder coverage and widget clipboard coverage for a completed-only `Context7` export showing `未完成：0` and `完成率：100%`.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_learning_catalog.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_learning_catalog.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 files already formatted. Targeted learning catalog and platform zone tests passed with 35 tests, including the new copied Markdown progress-summary assertions. Targeted analysis reported no issues.
+
+### Step 164: Learning Recommendation Markdown Ranking Summary
+
+**Operation:** Added ranking and type-distribution summary fields to copied learning recommendation Markdown.
+
+**Why:** Recommendation Markdown already listed next-step resources with per-item score and reason, but the top-level summary did not explain the score range, average strength, resource type mix, or local recommendation pipeline. Those fields make copied recommendations more useful in study logs and external review prompts.
+
+**Feature Goal:** Keep copied recommendation artifacts self-describing by including top score, average score, type distribution, and pipeline stages for both non-empty and empty recommendation lists.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed top score, average score, and recommendation resource type counts from the recommendation list inside `buildLearningRecommendationMarkdown`.
+
+**Operation:** Added top-level Markdown fields for top score, average score, type distribution, and `recommendationPipelineStages`.
+
+**Operation:** Added recommendation Markdown unit coverage for non-empty and empty exports, plus widget clipboard coverage for copying the recommendation list from the learning zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated 2 files. Targeted recommendation catalog and platform zone tests passed with 36 tests, including the new copied recommendation summary fields. Targeted analysis reported no issues.
+
+### Step 165: AI Audit Request Location Coverage Digest
+
+**Operation:** Added finding-location coverage to AI audit request drafts.
+
+**Why:** Step 158 added severity distribution and review priority, but external AI reviewers still had to scan every finding to understand whether risks were concentrated in one file or spread across the codebase. A location digest makes the copied request and visible panel faster to triage.
+
+**Feature Goal:** Show hit file count, the file with the most local findings, and the line-number range in both the AI audit placeholder panel and copied AI request prompt.
+
+**Files Modified:**
+- `lib/pages/platform/platform_ai_audit_request.dart`
+- `lib/pages/platform/coding_zone_page.dart`
+- `test/platform_ai_audit_request_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `locationDigest` to `CodeAuditAiRequestDraft` and computed it from local findings with an empty-state summary.
+
+**Operation:** Added the location digest to the generated AI request prompt and displayed it in the coding zone AI audit placeholder panel.
+
+**Operation:** Added request-builder coverage for populated and empty location digests, plus widget coverage for the visible digest in the coding zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_ai_audit_request.dart lib\pages\platform\coding_zone_page.dart test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_ai_audit_request.dart lib\pages\platform\coding_zone_page.dart test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 files already formatted. Targeted AI audit request and platform zone tests passed with 34 tests, including the new location digest coverage. Targeted analysis reported no issues.
+
+### Step 166: Relax Session Summary Average And Longest Record
+
+**Operation:** Added average minutes and longest-record fields to copied relax session summaries.
+
+**Why:** The relax summary already included record count, total minutes, recent records, and rhythm distribution, but daily reviews still needed a quick sense of typical session length and the longest completed rhythm.
+
+**Feature Goal:** Make copied relax summaries better suited for study journals by including average minutes per record and the longest recorded rhythm, with explicit empty-state values.
+
+**Files Modified:**
+- `lib/pages/platform/platform_relax_session_repository.dart`
+- `test/platform_relax_session_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed `averageMinutes` and `longestSession` inside `formatRelaxSessionSummary`.
+
+**Operation:** Added Markdown summary fields for `平均分钟` and `最长记录`, returning `0.0` and `无` when no sessions exist.
+
+**Operation:** Added repository coverage for populated and empty summaries, plus widget clipboard coverage for copying the relax summary from the relax zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_relax_session_repository.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_relax_session_repository.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated 2 files. Targeted relax session repository and platform zone tests passed with 38 tests, including the new average/longest summary coverage. Targeted analysis reported no issues.
+
+### Step 167: Code Audit History Latest And Largest Summary
+
+**Operation:** Added latest-report and largest-report fields to copied code audit report history summaries.
+
+**Why:** The report history overview already included count, total size, and report type distribution, but users still had to scan the list to identify the newest artifact or the largest saved report. Those two fields make the copied overview more useful for cleanup, handoff, and release review.
+
+**Feature Goal:** Make copied audit history summaries surface the most recently modified report and the largest saved report, with explicit `无` values when history is empty.
+
+**Files Modified:**
+- `lib/pages/platform/platform_code_audit_repository.dart`
+- `test/platform_code_audit_report_history_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed `latestReport` from the newest-first sorted report list and `largestReport` from saved report sizes.
+
+**Operation:** Added Markdown summary fields for `最近报告` and `最大报告`, including file size for the largest report.
+
+**Operation:** Added repository coverage for populated and empty history summaries, plus widget clipboard coverage for copying the report history overview from the coding zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated 2 files. Targeted code audit report history and platform zone tests passed with 39 tests, including the new latest/largest report history summary coverage. Targeted analysis reported no issues.
+
+### Step 168: Learning Progress Difficulty Distribution
+
+**Operation:** Added completed-resource difficulty distribution to copied learning progress reviews.
+
+**Why:** The progress review already included completion count, completion percentage, and type distribution, but it did not show whether the completed work skewed toward beginner, foundation, advanced, local, or practical resources. Difficulty distribution gives study logs a clearer sense of learning depth.
+
+**Feature Goal:** Include a `难度分布` line in learning progress Markdown, including an explicit `无` empty state.
+
+**Files Modified:**
+- `lib/pages/platform/platform_learning_progress_repository.dart`
+- `test/platform_learning_progress_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Counted completed resources by `PlatformLearningResource.level` inside `buildLearningProgressMarkdown`.
+
+**Operation:** Added the formatted level counts as a `难度分布` Markdown summary line.
+
+**Operation:** Added repository coverage for populated and empty difficulty distributions, plus widget clipboard coverage for copying learning progress from the learning zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_learning_progress_repository.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_learning_progress_repository.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 files already formatted. Targeted learning progress repository and platform zone tests passed with 35 tests, including the new difficulty distribution coverage. Targeted analysis reported no issues.
+
+### Step 169: Imported RAG Library Content Length Summary
+
+**Operation:** Added average content length and longest-document fields to copied imported RAG library summaries.
+
+**Why:** The imported RAG library overview already included document count, source distribution, tag distribution, and per-document summaries, but users still had to inspect each entry to understand whether the library consisted of short fragments or longer reference notes. Length statistics make the copied overview more useful for study review, prompt budgeting, and cleanup.
+
+**Feature Goal:** Include `平均正文长度` and `最长资料` lines in imported RAG library Markdown, including explicit `0.0 字` and `无` empty-state values.
+
+**Files Modified:**
+- `lib/pages/platform/rag_library_preview.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Counted normalized imported document content by Unicode rune length while building `buildImportedRagLibraryMarkdown`.
+
+**Operation:** Added formatted Markdown summary fields for average body length and longest imported document.
+
+**Operation:** Added clipboard coverage for populated imported-library summaries and direct coverage for empty summary length statistics.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `lib\pages\platform\rag_library_preview.dart` and then reported both targeted files already formatted. Targeted platform zone tests passed with 31 tests, including populated and empty imported RAG library length summary coverage. Targeted analysis reported no issues.
+
+### Step 170: AI Audit Request Rule Coverage Digest
+
+**Operation:** Added a rule-coverage digest to AI audit request drafts.
+
+**Why:** The AI audit request draft already surfaced risk severity distribution and finding location coverage, but external review still needed a quick signal for which deterministic rule family dominated the local scan. Rule coverage helps reviewers distinguish broad mixed-risk scans from repeated hits of the same rule before reading the full finding list.
+
+**Feature Goal:** Include a `规则覆盖` line in the visible AI audit panel and copied AI request Markdown, including explicit empty-state values for zero local findings.
+
+**Files Modified:**
+- `lib/pages/platform/platform_ai_audit_request.dart`
+- `lib/pages/platform/coding_zone_page.dart`
+- `test/platform_ai_audit_request_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Counted findings by `CodeAuditRule.title`, selected the highest-frequency rule with deterministic tie-breaking, and exposed the formatted digest as `CodeAuditAiRequestDraft.ruleDigest`.
+
+**Operation:** Rendered the rule digest in the coding zone AI audit panel and inserted it into the copied AI audit request prompt context.
+
+**Operation:** Added draft coverage for populated and empty rule digests, plus widget coverage for the visible coding zone rule coverage summary.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_ai_audit_request.dart lib\pages\platform\coding_zone_page.dart test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_ai_audit_request.dart lib\pages\platform\coding_zone_page.dart test\platform_ai_audit_request_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 targeted files already formatted. Targeted AI audit request and platform zone tests passed with 35 tests, including populated and empty rule coverage digest coverage. Targeted analysis reported no issues.
+
+### Step 171: Learning Catalog Difficulty Distribution
+
+**Operation:** Added difficulty distribution to copied learning resource catalog Markdown.
+
+**Why:** The copied learning resource catalog already preserved filters, sort order, progress counts, completion rate, and resource type distribution, but it did not summarize whether the visible set leaned toward introductory, common, local, advanced, or practical resources. Difficulty distribution makes exported study lists easier to balance before sharing them in notes, prompts, or handoffs.
+
+**Feature Goal:** Include a `难度分布` line in learning resource catalog Markdown, with an explicit `无` value for empty filtered results.
+
+**Files Modified:**
+- `lib/pages/platform/platform_learning_catalog.dart`
+- `test/platform_learning_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Counted visible catalog resources by `PlatformLearningResource.level` inside `buildLearningResourceCatalogMarkdown`.
+
+**Operation:** Added the formatted level counts as a `难度分布` Markdown summary line and reused the catalog count formatter for both type and difficulty distributions.
+
+**Operation:** Added catalog coverage for populated and empty difficulty distributions, plus widget clipboard coverage for copying the filtered learning resource catalog from the learning zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_learning_catalog.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_learning_catalog.dart test\platform_learning_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted files already formatted. Targeted learning catalog and platform zone tests passed with 38 tests, including populated and empty difficulty distribution coverage. Targeted analysis reported no issues.
+
+### Step 172: Learning Recommendation Difficulty Distribution
+
+**Operation:** Added difficulty distribution to copied learning recommendation Markdown.
+
+**Why:** The copied recommendation list already included top score, average score, type distribution, and the recommendation pipeline, but it did not summarize whether the suggested next steps skewed toward common, foundation, advanced, local, or practical resources. Difficulty distribution helps learners decide whether to accept the current recommendation set or switch goals before copying it into a study log or prompt.
+
+**Feature Goal:** Include a `难度分布` line in learning recommendation Markdown, with an explicit `无` value when no recommendations are available.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Counted recommended resources by `PlatformLearningResource.level` while building `buildLearningRecommendationMarkdown`.
+
+**Operation:** Added the formatted difficulty counts next to the existing type distribution and reused the recommendation count formatter for both maps.
+
+**Operation:** Added recommendation Markdown coverage for populated and empty difficulty distributions, plus widget clipboard coverage for copying the learning recommendation list from the learning zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted files already formatted. Targeted recommendation catalog and platform zone tests passed with 38 tests, including populated and empty recommendation difficulty distribution coverage. Targeted analysis reported no issues.
+
+### Step 173: Relax Session Summary Latest Record
+
+**Operation:** Added the most recent session highlight to copied relax session summaries.
+
+**Why:** The relax summary already included record count, total minutes, rhythm distribution, average minutes, longest record, and the full recent-record list. A top-level latest-record line makes daily review exports easier to scan, especially when the summary is pasted into a study log or prompt where the first few fields carry the most context.
+
+**Feature Goal:** Include a `最近记录` line in relax session Markdown summaries, with an explicit `无` value when no rhythm records exist.
+
+**Files Modified:**
+- `lib/pages/platform/platform_relax_session_repository.dart`
+- `test/platform_relax_session_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Selected the newest sorted relax session as `latestSession` while building `formatRelaxSessionSummary`.
+
+**Operation:** Added a formatted top-level `最近记录` Markdown field containing rhythm title, minutes, and completion timestamp.
+
+**Operation:** Added repository coverage for populated and empty latest-record summaries, plus widget clipboard coverage for copying the relax summary from the relax zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_relax_session_repository.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_relax_session_repository.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `test\platform_relax_session_repository_test.dart`. Targeted relax session repository and platform zone tests passed with 39 tests, including populated and empty latest-record summary coverage. Targeted analysis reported no issues.
+
+### Step 174: Code Audit History Average Size Summary
+
+**Operation:** Added average report size to copied code audit report history summaries.
+
+**Why:** The report history overview already included report count, total size, type distribution, latest report, and largest report. Average size gives cleanup and handoff reviews a quick sense of whether the history is mostly small snippet reports or heavier project audit artifacts.
+
+**Feature Goal:** Include a `平均大小` line in audit report history Markdown, with an explicit `0 B` value when no saved reports exist.
+
+**Files Modified:**
+- `lib/pages/platform/platform_code_audit_repository.dart`
+- `test/platform_code_audit_report_history_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed average report bytes from total size and report count inside `formatCodeAuditReportHistorySummary`.
+
+**Operation:** Added the formatted average size near the existing total size field in the copied Markdown overview.
+
+**Operation:** Added repository coverage for populated and empty average sizes, plus widget clipboard coverage for copying the code audit history summary from the coding zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted files already formatted. Targeted code audit report history and platform zone tests passed with 40 tests, including populated and empty average-size summary coverage. Targeted analysis reported no issues.
+
+### Step 175: Imported RAG Library Missing Summary Count
+
+**Operation:** Added missing-summary count to copied imported RAG library summaries.
+
+**Why:** The imported RAG library overview already included document count, average content length, longest document, source distribution, tag distribution, and per-document summaries. A missing-summary count makes cleanup easier by showing whether imported notes need metadata polishing before they are reused as prompt context or study material.
+
+**Feature Goal:** Include a `缺少摘要` line in imported RAG library Markdown, with an explicit `0` value for empty libraries or fully summarized libraries.
+
+**Files Modified:**
+- `lib/pages/platform/rag_library_preview.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Counted normalized imported documents whose `summary` is empty while building `buildImportedRagLibraryMarkdown`.
+
+**Operation:** Added the formatted missing-summary count beside the existing content-length overview fields.
+
+**Operation:** Added widget clipboard coverage for populated and empty imported-library summaries, plus direct Markdown coverage for a document that falls back to `无摘要`.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 2 targeted files already formatted. Targeted platform zone tests passed with 32 tests, including populated, empty, and missing-summary imported RAG library coverage. Targeted analysis reported no issues.
+
+### Step 176: Learning Recommendation Lowest Score Summary
+
+**Operation:** Added lowest recommendation score to copied learning recommendation Markdown.
+
+**Why:** The copied recommendation list already included top score and average score, but learners still could not see how wide the recommendation score range was without scanning each item. A lowest-score line makes the exported recommendation set easier to judge before accepting it as a focused next-step plan.
+
+**Feature Goal:** Include a `最低排序分` line in learning recommendation Markdown, with an explicit `0` value when no recommendations are available.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed the lowest recommendation score while building `buildLearningRecommendationMarkdown`, using an empty-list fallback of `0`.
+
+**Operation:** Added the formatted lowest score next to the existing top and average score summary fields.
+
+**Operation:** Added recommendation Markdown coverage for populated and empty lowest-score summaries, plus widget clipboard coverage for copying the learning recommendation list from the learning zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted files already formatted. Targeted recommendation catalog and platform zone tests passed with 39 tests, including populated and empty lowest-score summary coverage. Targeted analysis reported no issues.
+
+### Step 177: Code Audit History Smallest Report Summary
+
+**Operation:** Added smallest-report summary to copied code audit report history overviews.
+
+**Why:** The report history overview already included count, total size, average size, type distribution, latest report, and largest report. The smallest saved report helps cleanup reviews spot tiny snippet artifacts or incomplete-looking reports without scanning the whole list.
+
+**Feature Goal:** Include a `最小报告` line in audit report history Markdown, with an explicit `无` value when no saved reports exist.
+
+**Files Modified:**
+- `lib/pages/platform/platform_code_audit_repository.dart`
+- `test/platform_code_audit_report_history_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Tracked `smallestReport` while iterating sorted report history entries inside `formatCodeAuditReportHistorySummary`.
+
+**Operation:** Added the formatted smallest report name and file size beside the latest/largest report highlights.
+
+**Operation:** Added repository coverage for populated and empty smallest-report summaries, plus widget clipboard coverage for copying the code audit history summary from the coding zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated 3 targeted files. Targeted code audit report history and platform zone tests passed with 41 tests, including populated and empty smallest-report summary coverage. Targeted analysis reported no issues.
+
+### Step 178: Learning Recommendation Topic Distribution
+
+**Operation:** Added topic tag distribution to copied learning recommendation Markdown.
+
+**Why:** The copied recommendation list already included score range, average score, type distribution, difficulty distribution, and the recommendation pipeline. It still did not summarize which learning topics were driving the recommendation set. Topic distribution makes exported next-step plans easier to judge before pasting them into a study log, prompt, or handoff note.
+
+**Feature Goal:** Include a `主题分布` line in learning recommendation Markdown, with an explicit `无` value when no recommendations are available.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Counted recommended resources by tag while building `buildLearningRecommendationMarkdown`.
+
+**Operation:** Added the formatted topic counts next to the existing type and difficulty distributions, reusing the recommendation count formatter.
+
+**Operation:** Added recommendation Markdown coverage for populated and empty topic distributions, plus widget clipboard coverage for copying the learning recommendation list from the learning zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted files already formatted. Targeted recommendation catalog and platform zone tests passed with 39 tests, including the copied recommendation topic distribution coverage. Targeted analysis reported no issues.
+
+### Step 179: Visible Recommendation Topic Distribution
+
+**Operation:** Added a visible topic-distribution summary to the learning recommendation panel.
+
+**Why:** Step 178 added topic distribution to copied recommendation Markdown, but users still had to copy the artifact before seeing the topic mix. Showing the same summary in the recommendation panel makes the current recommendation set easier to inspect before exporting it.
+
+**Feature Goal:** Display the current `主题分布` value in the learning recommendation panel and keep it consistent with the copied Markdown output.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Extracted `formatLearningRecommendationTopicDistribution` so the Markdown exporter and visible recommendation panel reuse the same tag-count formatting.
+
+**Operation:** Rendered a keyed `recommendation-topic-distribution` row in `_RecommendationPanel`, using the current goal and completed-resource-aware recommendation list.
+
+**Operation:** Added unit coverage for populated and empty topic-distribution formatting, plus widget coverage proving the learning zone displays the topic distribution summary.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 targeted files already formatted. Targeted recommendation catalog and platform zone tests passed with 41 tests, including the visible topic-distribution panel coverage. Targeted analysis reported no issues.
+
+### Step 180: RAG Answer Draft Citation Score Summary
+
+**Operation:** Added citation score summary fields to copied RAG answer drafts.
+
+**Why:** The copied RAG answer draft already included the generated question, answer, citation count, and citation details. It still did not summarize citation confidence, so users had to scan each context score by hand. Showing the highest and average citation scores makes the exported draft easier to judge before pasting it into a study note or handoff.
+
+**Feature Goal:** Include `最高引用分` and `平均引用分` lines in copied RAG answer draft Markdown, with explicit `0.0` average values when no citation contexts exist.
+
+**Files Modified:**
+- `lib/pages/platform/rag_library_preview.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Computed the highest and average citation scores while building `_buildAnswerDraftMarkdown`.
+
+**Operation:** Added the formatted score summary below the existing citation-count line, using zero fallbacks for empty citation context lists.
+
+**Operation:** Added widget clipboard coverage proving copied RAG answer drafts include both score summary fields.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter completed for the targeted RAG preview and platform zone test files. Targeted platform zone tests passed, including copied RAG answer draft score summary coverage. Targeted analysis reported no issues.
+
+### Step 181: Visible RAG Answer Citation Score Summary
+
+**Operation:** Added a visible citation score summary to the RAG answer draft panel.
+
+**Why:** Step 180 added highest and average citation scores to the copied answer draft Markdown, but users still had to export the draft before seeing the confidence summary. Showing the same score digest in the panel makes the current answer easier to judge before saving, copying, or turning it into a study note.
+
+**Feature Goal:** Display the current `最高引用分` and `平均引用分` values in the RAG answer draft panel and keep them consistent with the copied Markdown output.
+
+**Files Modified:**
+- `lib/pages/platform/rag_library_preview.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Extracted `_summarizeRagCitationScores` so the Markdown exporter and visible answer panel reuse the same top-score and average-score calculation.
+
+**Operation:** Rendered a keyed `rag-answer-citation-score-summary` chip row in `_RagAnswerDraftPanel` with highest and average citation scores.
+
+**Operation:** Added widget coverage proving the RAG preview displays the answer draft citation score summary before export.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+- `flutter test test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\rag_library_preview.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 2 targeted files already formatted. Targeted platform zone tests passed with 34 tests, including visible RAG answer draft citation score summary coverage. Targeted analysis reported no issues.
+
+### Step 182: Visible Recommendation Score Summary
+
+**Operation:** Added a visible recommendation score summary to the learning recommendation panel.
+
+**Why:** The copied recommendation Markdown already exposed the score range and average score, but the in-app recommendation panel only showed pipeline stages and topic distribution. Learners still had to copy the Markdown artifact before judging whether the current recommendation set was tightly ranked or broad. Showing the same score summary in the panel makes the current next-step list easier to inspect before export.
+
+**Feature Goal:** Display the current highest score, lowest score, and average score in the learning recommendation panel, and keep that display consistent with copied recommendation Markdown.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `lib/pages/platform/rag_library_preview.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `LearningRecommendationScoreSummary`, `summarizeLearningRecommendationScores`, and `formatLearningRecommendationScoreSummary` so Markdown export and UI rendering share the same recommendation score calculation.
+
+**Operation:** Rendered a keyed `recommendation-score-summary` row in `_RecommendationPanel`, placing the score range and average above the existing topic-distribution row.
+
+**Operation:** Added unit coverage for populated and empty recommendation score summaries, plus widget coverage proving the learning zone displays both score and topic summaries for the recommendation goal.
+
+**Operation:** Fixed a compile-time scope issue in `rag_library_preview.dart` where the citation score summary was computed in the retrieval-plan panel instead of the answer-draft panel. This restored the platform zone test suite after Step 181's visible citation summary code path was loaded.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart format lib\pages\platform\rag_library_preview.dart lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart lib\pages\platform\rag_library_preview.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed after fixing the RAG answer-draft scope issue. Formatter reported the targeted Dart files already formatted. Targeted recommendation catalog and platform zone tests passed with 43 tests, including visible recommendation score/topic summary coverage and RAG answer draft citation score summary coverage. Targeted analysis reported no issues.
+
+### Step 183: Visible Recommendation Resource Structure Summary
+
+**Operation:** Added a visible recommendation resource structure summary to the learning recommendation panel.
+
+**Why:** Copied recommendation Markdown already included resource type and difficulty distributions, but the in-app recommendation panel only exposed score and topic summaries before export. Learners need to see whether the next-step list is balanced across resource formats and difficulty levels before deciding to copy or act on it.
+
+**Feature Goal:** Display the current resource type distribution and difficulty distribution in the learning recommendation panel, while keeping those values consistent with copied recommendation Markdown.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Extracted `formatLearningRecommendationTypeDistribution`, `formatLearningRecommendationDifficultyDistribution`, and `formatLearningRecommendationResourceStructure` so Markdown export and visible UI share the same type/difficulty summary formatting.
+
+**Operation:** Rendered a keyed `recommendation-resource-structure` row in `_RecommendationPanel`, placing the type and difficulty summary between the score summary and topic distribution.
+
+**Operation:** Added unit coverage for populated and empty resource-structure formatting, plus widget coverage proving the learning zone displays score, resource structure, and topic summaries for the recommendation goal.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 targeted files already formatted. Targeted recommendation catalog and platform zone tests passed with 44 tests, including the new visible recommendation resource-structure coverage. Targeted analysis reported no issues.
+
+### Step 184: RAG Study Note Citation Score Summary
+
+**Operation:** Added citation score summary fields to exported local RAG study notes.
+
+**Why:** RAG answer drafts now showed and copied the highest and average citation scores, but the fuller study-note export still only listed per-evidence `score` values. Learners had to scan every cited evidence row to judge whether a saved note was backed by strong matches. Adding the same summary to the study note keeps quick answer drafts and durable learning notes aligned.
+
+**Feature Goal:** Include `最高引用分` and `平均引用分` in generated RAG study-note Markdown, using the same calculation as the answer draft panel and copied answer draft.
+
+**Files Modified:**
+- `lib/pages/platform/platform_rag_catalog.dart`
+- `lib/pages/platform/rag_library_preview.dart`
+- `test/platform_rag_catalog_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `LocalRagCitationScoreSummary` and `summarizeLocalRagCitationScores()` in the RAG catalog layer so exports and UI rendering share one citation-score calculation.
+
+**Operation:** Added highest-score and average-score lines to `buildLocalRagStudyNote()` before the keyword list, preserving the existing answer draft and evidence sections.
+
+**Operation:** Updated `RagLibraryPreview` to reuse the shared catalog summary helper instead of carrying a private duplicate helper in the preview file.
+
+**Operation:** Added catalog tests for populated and empty citation score summaries, plus study-note Markdown coverage proving the exported note includes both score summary fields.
+
+**Operation:** Kept the existing Step 181 through Step 183 records intact and appended this RAG study-note export entry as Step 184.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_rag_catalog.dart lib\pages\platform\rag_library_preview.dart test\platform_rag_catalog_test.dart`
+- `flutter test test\platform_rag_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_rag_catalog.dart lib\pages\platform\rag_library_preview.dart test\platform_rag_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted Dart files already formatted. Targeted RAG catalog and platform zone tests passed with 73 total tests, including citation score summary and study-note export coverage. Targeted analysis reported no issues.
+
+### Step 185: Visible Recommendation List Status Summary
+
+**Operation:** Added a recommendation list-status summary to the learning recommendation panel and copied recommendation Markdown.
+
+**Why:** The recommendation panel now exposes score range, resource structure, and topic distribution before export, but learners still could not see the progress/list-size context next to those summaries. The copied Markdown already carried separate completed-resource and recommendation counts; a compact shared status line makes that context visible in the panel and easier to scan in exported notes.
+
+**Feature Goal:** Display the current completed-resource count and current recommendation count in the learning recommendation panel, and include the same `清单状态` summary in copied recommendation Markdown.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatLearningRecommendationListStatus`, formatting completed-resource count and current recommendation count for reuse by Markdown export and the recommendation panel.
+
+**Operation:** Added a top-level `清单状态` line to `buildLearningRecommendationMarkdown`, preserving the existing separate completed-resource and recommendation-count fields.
+
+**Operation:** Rendered a keyed `recommendation-list-status` row in `_RecommendationPanel`, placing the list-size/progress context before the score, resource-structure, and topic summaries.
+
+**Operation:** Added catalog coverage for populated and empty list-status formatting and Markdown output, plus widget coverage proving the learning zone displays list status before export.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `test/platform_zones_test.dart`. Targeted recommendation catalog and platform zone tests passed with 45 tests, including the new recommendation list-status coverage. Targeted analysis reported no issues.
+
+### Step 186: RAG Study Note Document Citation Summary
+
+**Operation:** Added citation score summary fields to saved local RAG study-note document summaries.
+
+**Why:** Step 184 added highest and average citation scores to the full study-note Markdown export, but the `LocalRagDocument.summary` created when users save that note back into the RAG library still only described the source and citation count. Re-imported note cards should expose evidence strength before users open the full Markdown body.
+
+**Feature Goal:** Include highest and average citation scores in generated RAG study-note document summaries, using the same shared citation-score helper as the answer draft panel and study-note Markdown export.
+
+**Files Modified:**
+- `lib/pages/platform/platform_rag_catalog.dart`
+- `test/platform_rag_catalog_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Reused `summarizeLocalRagCitationScores()` inside `buildLocalRagStudyNoteDocument()` before building the `LocalRagDocument.summary`.
+
+**Operation:** Added `最高引用分` and `平均引用分` values to both populated and empty-context generated document summaries, preserving the existing citation-count summary.
+
+**Operation:** Extended the study-note document conversion test to assert that saved document summaries include the same top and average citation scores.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_rag_catalog.dart test\platform_rag_catalog_test.dart`
+- `flutter test test\platform_rag_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_rag_catalog.dart test\platform_rag_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 2 targeted Dart files already formatted. Targeted RAG catalog and platform zone tests passed with 73 total tests, including the saved study-note document summary coverage. Targeted analysis reported no issues.
+
+### Step 187: Visible Recommendation Top Resource Summary
+
+**Operation:** Added a top-ranked recommendation summary to the learning recommendation panel and copied recommendation Markdown.
+
+**Why:** The recommendation panel now shows list status, score range, resource structure, and topic distribution, but users still had to scan the recommendation cards to identify the first-ranked next step. A compact top-resource summary makes the highest-priority item visible before export and keeps copied recommendation notes easier to skim.
+
+**Feature Goal:** Display the current top-ranked recommendation title and score in the learning recommendation panel, and include the same `首推资源` summary in copied recommendation Markdown with an explicit `无` value for empty recommendation lists.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatLearningRecommendationTopResource`, formatting the first ranked recommendation as title plus score and returning `无` for empty lists.
+
+**Operation:** Added a top-level `首推资源` line to `buildLearningRecommendationMarkdown`, before the score and distribution summaries.
+
+**Operation:** Rendered a keyed `recommendation-top-resource` row in `_RecommendationPanel`, placing the top-resource summary after the list-status row and before the score summary.
+
+**Operation:** Added catalog coverage for populated and empty top-resource formatting and Markdown output, plus widget coverage proving the learning zone displays the top-resource summary before export.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 targeted files already formatted. Targeted recommendation catalog and platform zone tests passed with 46 tests, including the new top-ranked recommendation summary coverage. Targeted analysis reported no issues.
+
+### Step 188: RAG Citation Lowest Score Summary
+
+**Operation:** Added lowest citation score fields to local RAG citation summaries.
+
+**Why:** RAG answer drafts, study-note Markdown, and saved study-note documents already showed highest and average citation scores. That helped judge strong evidence, but users still could not see the weakest cited context without scanning every evidence row. Adding the lowest citation score makes the evidence range visible in the panel and all copied/saved artifacts.
+
+**Feature Goal:** Include `最低引用分` beside `最高引用分` and `平均引用分` across the shared local RAG citation score summary, copied answer drafts, visible answer-draft chips, exported study notes, and saved study-note document summaries.
+
+**Files Modified:**
+- `lib/pages/platform/platform_rag_catalog.dart`
+- `lib/pages/platform/rag_library_preview.dart`
+- `test/platform_rag_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Extended `LocalRagCitationScoreSummary` with `lowestScore`, using `0` as the empty-context fallback.
+
+**Operation:** Added the lowest-score field to RAG study-note Markdown and saved study-note document summaries through the shared catalog helper.
+
+**Operation:** Added the lowest-score field to copied RAG answer draft Markdown and rendered a matching `最低引用分` chip in the answer draft panel.
+
+**Operation:** Extended catalog and widget coverage for populated/empty lowest citation scores, exported study notes, saved document summaries, visible answer panels, and copied answer drafts.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_rag_catalog.dart lib\pages\platform\rag_library_preview.dart test\platform_rag_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_rag_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_rag_catalog.dart lib\pages\platform\rag_library_preview.dart test\platform_rag_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 targeted Dart files already formatted. Targeted RAG catalog and platform zone tests passed with 73 tests, including lowest citation score summary coverage. Targeted analysis reported no issues.
+
+### Step 189: Relax Session Shortest Record Summary
+
+**Operation:** Added shortest-record highlights to relax session summaries.
+
+**Why:** Relax session summaries already showed average minutes, longest record, latest record, rhythm distribution, and the full recent-record list. Users could see their longest focus/rest rhythm, but not the shortest recorded rhythm without scanning the whole list. Showing the shortest record makes daily recovery reviews better at spotting tiny breaks or unexpectedly short focus sessions.
+
+**Feature Goal:** Include `最短记录` in copied relax session Markdown summaries and the visible relax-session highlight row, with `无` as the empty-history fallback.
+
+**Files Modified:**
+- `lib/pages/platform/platform_relax_session_repository.dart`
+- `test/platform_relax_session_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Extended `RelaxSessionHighlightSummary` with `shortestRecord` and computed it alongside average, longest, and latest records.
+
+**Operation:** Added `最短记录` to `formatRelaxSessionSummary()` and `formatRelaxSessionHighlightSummary()` so copied Markdown and the visible history panel stay aligned.
+
+**Operation:** Added repository coverage for populated and empty shortest-record summaries, plus widget coverage proving the relax zone displays and copies the shortest-record field.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_relax_session_repository.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_relax_session_repository.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `test/platform_zones_test.dart`. Targeted relax session repository and platform zone tests passed with 43 tests, including shortest-record summary coverage. Targeted analysis reported no issues.
+
+### Step 190: Code Audit History Latest Report Detail Summary
+
+**Operation:** Added timestamp and size details to the latest saved code audit report summary.
+
+**Why:** The copied audit report history overview already showed report count, total size, average size, type distribution, latest report name, largest report, smallest report, and recent report rows. The top-level `最近报告` line still only carried the file name, so users had to scan the list below to see when the latest report changed and how large it was. Adding timestamp and size makes the overview easier to judge before copying it into a handoff or cleanup note.
+
+**Feature Goal:** Format the top-level `最近报告` field as file name, modified time, and file size, while preserving the `无` empty-state fallback.
+
+**Files Modified:**
+- `lib/pages/platform/platform_code_audit_repository.dart`
+- `test/platform_code_audit_report_history_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `_formatLatestReportSummary()` to reuse the existing report timestamp and size formatters for the latest report line.
+
+**Operation:** Updated code audit history Markdown generation so `最近报告` now includes file name, modified timestamp, and formatted size.
+
+**Operation:** Extended repository and coding-zone clipboard coverage to assert the richer latest-report summary.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted Dart files already formatted. Targeted code audit report history and platform zone tests passed with 43 tests, including latest-report detail summary coverage. Targeted analysis reported no issues.
+
+### Step 191: Relax Session Filter Summary Formatter
+
+**Operation:** Added a shared formatter for the relax session history filter subtotal.
+
+**Why:** The relax history panel already showed the current all/focus/rest count and minutes, but the text was assembled inside the widget. Moving the count/minute subtotal into the relax session repository keeps the visible panel stable, gives tests a reusable formatting target, and prepares the same wording for future filtered copy/export flows.
+
+**Feature Goal:** Keep the visible `当前筛选` subtotal consistent across all, focus, and rest filters while exposing a stable widget key for regression tests.
+
+**Files Modified:**
+- `lib/pages/platform/platform_relax_session_repository.dart`
+- `lib/pages/platform/relax_zone_page.dart`
+- `test/platform_relax_session_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatRelaxSessionFilterSummary()` to format filtered record counts and total minutes, including the empty `0 次，共 0 分钟。` state.
+
+**Operation:** Updated the relax history panel to render the selected filter subtotal through the shared formatter and attached `relax-session-filter-summary` as a stable widget key.
+
+**Operation:** Added repository coverage for populated and empty filter summaries, plus widget coverage proving the filter subtotal remains visible in the relax zone.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_relax_session_repository.dart lib\pages\platform\relax_zone_page.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_relax_session_repository.dart lib\pages\platform\relax_zone_page.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `lib/pages/platform/relax_zone_page.dart`. Targeted relax session repository and platform zone tests passed with 44 tests, including filter-summary formatter coverage. Targeted analysis reported no issues.
+
+### Step 192: Learning Progress Visible Completion Summary
+
+**Operation:** Added a shared formatter for the learning progress completion summary.
+
+**Why:** The copied learning progress review already reported completed count and completion percentage, while the visible panel only showed the raw `completed / total` counter beside the actions. Showing the same completion wording in the panel makes the progress state easier to scan before copying a review.
+
+**Feature Goal:** Render a stable `已完成：x/y / 完成度：z%` summary in the learning progress panel and keep the formatter covered for empty and populated progress states.
+
+**Files Modified:**
+- `lib/pages/platform/platform_learning_progress_repository.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_learning_progress_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatLearningProgressSummary()` so the panel can reuse the same completion-ratio formatting as exported progress Markdown.
+
+**Operation:** Updated `_LearningProgressPanel` to render the shared summary below the progress bar with the stable `learning-progress-summary` key.
+
+**Operation:** Added repository coverage for populated and empty summaries, plus widget coverage proving the learning zone displays the visible completion summary after a resource is completed.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_learning_progress_repository.dart lib\pages\platform\learning_zone_page.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_learning_progress_repository.dart lib\pages\platform\learning_zone_page.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `lib/pages/platform/platform_learning_progress_repository.dart`. Targeted learning progress repository and platform zone tests passed with 40 tests, including visible completion-summary coverage. Targeted analysis reported no issues.
+
+### Step 193: Relax Session Filtered Markdown Copy
+
+**Operation:** Added Markdown copying for the currently selected relax session history filter.
+
+**Why:** Step 191 made the all/focus/rest filter subtotal reusable and visible. Users can now narrow the history to only focus or only rest sessions, so the next useful handoff is copying that exact filtered view instead of exporting the full relax history and trimming it manually.
+
+**Feature Goal:** Let the relax history panel copy the current all/focus/rest filter as a focused Markdown summary with filter scope, subtotal, rhythm distribution, highlight records, and only the selected session rows.
+
+**Files Modified:**
+- `lib/pages/platform/platform_relax_session_repository.dart`
+- `lib/pages/platform/relax_zone_page.dart`
+- `test/platform_relax_session_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatRelaxSessionFilteredSummary()`, sorting the selected records newest-first and including empty-state Markdown when the current filter has no records.
+
+**Operation:** Added `复制当前筛选总结` to the relax history filter subtotal row and wired it to copy the selected filter's records through the new Markdown formatter.
+
+**Operation:** Added repository coverage for populated and empty filtered summaries, plus widget clipboard coverage proving the rest filter copies only rest sessions and excludes the focus session.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_relax_session_repository.dart lib\pages\platform\relax_zone_page.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_relax_session_repository.dart lib\pages\platform\relax_zone_page.dart test\platform_relax_session_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `lib/pages/platform/platform_relax_session_repository.dart`, `test/platform_relax_session_repository_test.dart`, and `test/platform_zones_test.dart`. Targeted relax session repository and platform zone tests passed with 46 tests, including filtered Markdown copy coverage. Targeted analysis reported no issues.
+
+### Step 194: Learning Progress Remaining Resource Summary
+
+**Operation:** Added remaining-resource counts to learning progress summaries.
+
+**Why:** The learning progress panel and copied review now share completed-count and completion-percentage wording, but users still had to subtract completed resources from the catalog total to know how many items were left. Adding the remaining count makes progress reviews and the visible panel more actionable during study planning.
+
+**Feature Goal:** Include `剩余资源` in the copied learning progress Markdown and visible progress summary, with a zero fallback for empty progress and over-complete defensive states.
+
+**Files Modified:**
+- `lib/pages/platform/platform_learning_progress_repository.dart`
+- `test/platform_learning_progress_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `_remainingLearningResourceCount()` and reused it from `buildLearningProgressMarkdown()` and `formatLearningProgressSummary()`.
+
+**Operation:** Rewrote learning progress repository tests with Unicode-escaped Chinese expectations so terminal encoding cannot hide regressions, while preserving existing coverage and adding remaining-count assertions.
+
+**Operation:** Extended learning-zone widget coverage to assert the visible progress summary includes the remaining resource count after completing a resource.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_learning_progress_repository.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_learning_progress_repository.dart lib\pages\platform\learning_zone_page.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `lib/pages/platform/platform_learning_progress_repository.dart`. Targeted learning progress repository and platform zone tests passed with 40 tests, including remaining-resource summary coverage. Targeted analysis reported no issues.
+
+### Step 195: Code Audit History Visible Filter Summary
+
+**Operation:** Added a visible filter subtotal to the code audit report history panel.
+
+**Why:** The copied code audit report history overview already includes report count, total size, average size, type distribution, latest report details, and largest/smallest report highlights. The in-app history panel showed the saved reports and type filter, but users had to copy the overview or scan rows to understand the current all/snippet/project subtotal. Showing count and size stats directly in the panel makes cleanup and handoff review easier before copying.
+
+**Feature Goal:** Render a stable visible summary for the selected code audit history filter, showing report count, total size, and average size across all, snippet, and project views.
+
+**Files Modified:**
+- `lib/pages/platform/platform_code_audit_repository.dart`
+- `lib/pages/platform/coding_zone_page.dart`
+- `test/platform_code_audit_report_history_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatCodeAuditReportHistoryFilterSummary()` so the visible panel can reuse repository-level size formatting for filtered report counts, total size, and average size.
+
+**Operation:** Updated `_ReportHistoryPanel` to show the shared summary below the all/snippet/project segmented filter with the stable `code-audit-report-history-filter-summary` key.
+
+**Operation:** Added repository coverage for populated and empty visible summaries, plus widget coverage proving the summary updates when switching between all, project, and snippet report filters.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_code_audit_repository.dart lib\pages\platform\coding_zone_page.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_code_audit_repository.dart lib\pages\platform\coding_zone_page.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 targeted Dart files already formatted. Targeted code audit report history and platform zone tests passed with 44 tests, including visible filter-summary coverage. Targeted analysis reported no issues.
+
+### Step 196: Code Audit Filter Highlight Report Summary
+
+**Operation:** Added latest, largest, and smallest report details to the visible code audit history filter summary.
+
+**Why:** Step 195 made the all/snippet/project filter subtotal visible with count, total size, and average size. Users still had to scan the filtered rows to know which report in that filter changed most recently or which saved reports were the largest and smallest. Reusing the report highlight formatters keeps the visible panel aligned with the copied history overview and makes cleanup reviews faster.
+
+**Feature Goal:** Extend `formatCodeAuditReportHistoryFilterSummary()` so the current filter summary includes the latest report file name, modified timestamp, and size, plus largest and smallest report size highlights, with `无` as the empty-filter fallback.
+
+**Files Modified:**
+- `lib/pages/platform/platform_code_audit_repository.dart`
+- `test/platform_code_audit_report_history_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `summarizeCodeAuditReportHistoryHighlights()` and reused `_formatLatestReportSummary()` plus `_formatReportSizeHighlight()` for consistent highlight formatting.
+
+**Operation:** Updated repository coverage for populated and empty filter summaries to assert latest, largest, and smallest report fields.
+
+**Operation:** Extended coding-zone widget coverage so the visible filter summary includes latest, largest, and smallest report details for the current report filter.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_code_audit_repository.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_code_audit_repository.dart lib\pages\platform\coding_zone_page.dart test\platform_code_audit_report_history_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 3 targeted Dart files already formatted. Targeted code audit report history and platform zone tests passed with 45 tests, including visible latest/largest/smallest filter-highlight coverage. Targeted analysis reported no issues.
+
+### Step 197: Learning Progress Next Resource Summary
+
+**Operation:** Added the next unfinished learning resource to progress summaries.
+
+**Why:** Step 194 added remaining-resource counts to the visible learning progress panel and copied Markdown review. Users could see how many resources were left, but still had to scan the catalog to identify the next unfinished item. Showing the next resource makes the progress summary immediately actionable.
+
+**Feature Goal:** Include `下一资源` in the visible learning progress summary and copied progress Markdown, with `无` as the fallback when all resources are complete or no resources exist.
+
+**Files Modified:**
+- `lib/pages/platform/platform_learning_progress_repository.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_learning_progress_repository_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatLearningProgressNextResource()` to return the first unfinished resource title from catalog order, falling back to `无`.
+
+**Operation:** Updated `buildLearningProgressMarkdown()` and `formatLearningProgressSummary()` so copied progress reviews and the visible panel both include the next-resource field.
+
+**Operation:** Passed completed ids and catalog resources into `_LearningProgressPanel`, then extended repository and widget coverage for populated, empty, over-complete, and visible next-resource states.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_learning_progress_repository.dart lib\pages\platform\learning_zone_page.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_learning_progress_repository.dart lib\pages\platform\learning_zone_page.dart test\platform_learning_progress_repository_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter updated `test/platform_learning_progress_repository_test.dart`. Targeted learning progress repository and platform zone tests passed with 41 tests, including next-resource summary coverage. Targeted analysis reported no issues.
+
+### Step 198: Learning Recommendation Pipeline Summary
+
+**Operation:** Added a shared recommendation pipeline summary to the learning recommendation panel and copied Markdown.
+
+**Why:** The recommendation panel already displayed stage chips and detailed stage descriptions, while copied Markdown listed the pipeline order. Users still had to count stages manually and the visible panel did not expose the pipeline as a compact reusable summary. Sharing one formatter keeps the visible panel and copied artifact aligned.
+
+**Feature Goal:** Show `推荐流程` and `阶段数` in both the visible recommendation panel and copied recommendation Markdown, using the local recommendation pipeline stage order as the source of truth.
+
+**Files Modified:**
+- `lib/pages/platform/platform_recommendation_catalog.dart`
+- `lib/pages/platform/learning_zone_page.dart`
+- `test/platform_recommendation_catalog_test.dart`
+- `test/platform_zones_test.dart`
+- `docs/release/2026-05-31-platform-mvp-handoff.md`
+- `docs/dev-log/2026-05-28-programmer-learning-platform-log.md`
+
+**Operation:** Added `formatLearningRecommendationPipelineSummary()` and reused it from `buildLearningRecommendationMarkdown()` so copied recommendation exports include both stage order and stage count.
+
+**Operation:** Added a visible `recommendation-pipeline-summary` row to `_RecommendationPanel`, using the same formatter as the copied Markdown.
+
+**Operation:** Extended repository and widget coverage to assert the shared pipeline summary and stage count in Markdown, clipboard output, and the visible recommendation panel.
+
+**Verification Commands:**
+- `dart format lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `flutter test test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+- `dart analyze lib\pages\platform\platform_recommendation_catalog.dart lib\pages\platform\learning_zone_page.dart test\platform_recommendation_catalog_test.dart test\platform_zones_test.dart`
+
+**Result:** Passed. Formatter reported 4 targeted Dart files already formatted. Targeted recommendation catalog and platform zone tests passed with 47 tests, including shared pipeline-summary coverage in Markdown, clipboard output, and the visible recommendation panel. Targeted analysis reported no issues.

@@ -45,16 +45,37 @@ void main() {
       generatedAt: DateTime(2026, 6, 8, 9, 30),
     );
 
-    expect(markdown, startsWith('# 学习进度复盘'));
-    expect(markdown, contains('- 生成时间：2026-06-08 09:30'));
+    expect(markdown, startsWith('# \u5b66\u4e60\u8fdb\u5ea6\u590d\u76d8'));
     expect(
-        markdown, contains('- 已完成：2/${allPlatformLearningResources.length}'));
-    expect(markdown, contains('- 类型分布：'));
-    expect(markdown, contains('## 已完成资源'));
+      markdown,
+      contains('- \u751f\u6210\u65f6\u95f4\uff1a2026-06-08 09:30'),
+    );
+    expect(
+      markdown,
+      contains('- \u5df2\u5b8c\u6210\uff1a2/'
+          '${allPlatformLearningResources.length}'),
+    );
+    expect(
+      markdown,
+      contains('- \u5269\u4f59\u8d44\u6e90\uff1a'
+          '${allPlatformLearningResources.length - 2}'),
+    );
+    expect(
+      markdown,
+      contains(
+          '- \u4e0b\u4e00\u8d44\u6e90\uff1a${allPlatformLearningResources[1].title}'),
+    );
+    expect(markdown, contains('- \u7c7b\u578b\u5206\u5e03\uff1a'));
+    expect(markdown, contains('## \u5df2\u5b8c\u6210\u8d44\u6e90'));
+    expect(markdown, contains('- \u96be\u5ea6\u5206\u5e03\uff1a'));
     expect(markdown, contains('1. ${allPlatformLearningResources[0].title}'));
     expect(markdown, contains('2. ${allPlatformLearningResources[5].title}'));
     expect(
-        markdown, contains('   - 入口：${allPlatformLearningResources[0].url}'));
+      markdown,
+      contains(
+        '   - \u5165\u53e3\uff1a${allPlatformLearningResources[0].url}',
+      ),
+    );
   });
 
   test('learning progress markdown handles empty progress', () {
@@ -64,10 +85,74 @@ void main() {
       generatedAt: DateTime(2026, 6, 8, 9, 30),
     );
 
-    expect(markdown, contains('- 已完成：0/0'));
-    expect(markdown, contains('- 完成度：0%'));
-    expect(markdown, contains('- 类型分布：无'));
-    expect(markdown, contains('暂无已完成的学习资源。'));
+    expect(markdown, contains('- \u5df2\u5b8c\u6210\uff1a0/0'));
+    expect(markdown, contains('- \u5269\u4f59\u8d44\u6e90\uff1a0'));
+    expect(markdown, contains('- \u4e0b\u4e00\u8d44\u6e90\uff1a\u65e0'));
+    expect(markdown, contains('- \u5b8c\u6210\u5ea6\uff1a0%'));
+    expect(markdown, contains('- \u7c7b\u578b\u5206\u5e03\uff1a\u65e0'));
+    expect(
+      markdown,
+      contains(
+        '\u6682\u65e0\u5df2\u5b8c\u6210\u7684\u5b66\u4e60\u8d44\u6e90\u3002',
+      ),
+    );
+  });
+
+  test('learning progress markdown includes empty level distribution', () {
+    final markdown = buildLearningProgressMarkdown(
+      completedResourceIds: const {},
+      resources: const [],
+      generatedAt: DateTime(2026, 6, 8, 9, 30),
+    );
+
+    expect(markdown, contains('- \u96be\u5ea6\u5206\u5e03\uff1a\u65e0'));
+  });
+
+  test('learning progress summary formats completion ratio and remaining count',
+      () {
+    expect(
+      formatLearningProgressSummary(
+        completedCount: 3,
+        nextResource: 'CS50',
+        totalCount: 12,
+      ),
+      '\u5df2\u5b8c\u6210\uff1a3/12 / '
+      '\u5269\u4f59\u8d44\u6e90\uff1a9 / '
+      '\u4e0b\u4e00\u8d44\u6e90\uff1aCS50 / '
+      '\u5b8c\u6210\u5ea6\uff1a25%',
+    );
+    expect(
+      formatLearningProgressSummary(completedCount: 0, totalCount: 0),
+      '\u5df2\u5b8c\u6210\uff1a0/0 / '
+      '\u5269\u4f59\u8d44\u6e90\uff1a0 / '
+      '\u4e0b\u4e00\u8d44\u6e90\uff1a\u65e0 / '
+      '\u5b8c\u6210\u5ea6\uff1a0%',
+    );
+    expect(
+      formatLearningProgressSummary(completedCount: 8, totalCount: 6),
+      '\u5df2\u5b8c\u6210\uff1a8/6 / '
+      '\u5269\u4f59\u8d44\u6e90\uff1a0 / '
+      '\u4e0b\u4e00\u8d44\u6e90\uff1a\u65e0 / '
+      '\u5b8c\u6210\u5ea6\uff1a133.3%',
+    );
+  });
+
+  test('learning progress next resource returns first unfinished resource', () {
+    expect(
+      formatLearningProgressNextResource(
+        completedResourceIds: {allPlatformLearningResources.first.id},
+        resources: allPlatformLearningResources,
+      ),
+      allPlatformLearningResources[1].title,
+    );
+    expect(
+      formatLearningProgressNextResource(
+        completedResourceIds:
+            allPlatformLearningResources.map((resource) => resource.id).toSet(),
+        resources: allPlatformLearningResources,
+      ),
+      '\u65e0',
+    );
   });
 }
 

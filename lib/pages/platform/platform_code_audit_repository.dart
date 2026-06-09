@@ -143,6 +143,18 @@ Future<File> restoreCodeAuditReportMarkdown(
   return file.writeAsString(markdown);
 }
 
+class CodeAuditReportHistoryHighlights {
+  const CodeAuditReportHistoryHighlights({
+    required this.latestReport,
+    required this.largestReport,
+    required this.smallestReport,
+  });
+
+  final CodeAuditSavedReport? latestReport;
+  final CodeAuditSavedReport? largestReport;
+  final CodeAuditSavedReport? smallestReport;
+}
+
 String formatCodeAuditReportHistorySummary(
   List<CodeAuditSavedReport> reports, {
   String filterLabel = '全部',
@@ -158,6 +170,9 @@ String formatCodeAuditReportHistorySummary(
         ifAbsent: () => 1);
     totalBytes += report.sizeBytes;
   }
+  final averageBytes =
+      sortedReports.isEmpty ? 0 : (totalBytes / sortedReports.length).round();
+  final highlights = summarizeCodeAuditReportHistoryHighlights(sortedReports);
 
   final buffer = StringBuffer()
     ..writeln('# 审计报告历史总览')
@@ -166,8 +181,24 @@ String formatCodeAuditReportHistorySummary(
     ..writeln('- 当前筛选：$filterLabel')
     ..writeln('- 报告数量：${sortedReports.length}')
     ..writeln('- 总大小：${_formatReportSize(totalBytes)}')
+    ..writeln('- 平均大小：${_formatReportSize(averageBytes)}')
     ..writeln(
       '- 类型分布：${_formatReportTypeCounts(typeCounts)}',
+    )
+    ..writeln();
+
+  buffer
+    ..writeln(
+      '- \u6700\u8fd1\u62a5\u544a\uff1a'
+      '${_formatLatestReportSummary(highlights.latestReport)}',
+    )
+    ..writeln(
+      '- \u6700\u5927\u62a5\u544a\uff1a'
+      '${_formatReportSizeHighlight(highlights.largestReport)}',
+    )
+    ..writeln(
+      '- \u6700\u5c0f\u62a5\u544a\uff1a'
+      '${_formatReportSizeHighlight(highlights.smallestReport)}',
     )
     ..writeln();
 
@@ -190,6 +221,63 @@ String formatCodeAuditReportHistorySummary(
   }
 
   return buffer.toString();
+}
+
+String formatCodeAuditReportHistoryFilterSummary(
+  List<CodeAuditSavedReport> reports,
+) {
+  final totalBytes = reports.fold<int>(
+    0,
+    (sum, report) => sum + report.sizeBytes,
+  );
+  final averageBytes =
+      reports.isEmpty ? 0 : (totalBytes / reports.length).round();
+  final highlights = summarizeCodeAuditReportHistoryHighlights(reports);
+  return '\u5f53\u524d\u7b5b\u9009\uff1a${reports.length} \u4efd / '
+      '\u603b\u5927\u5c0f\uff1a${_formatReportSize(totalBytes)} / '
+      '\u5e73\u5747\u5927\u5c0f\uff1a${_formatReportSize(averageBytes)} / '
+      '\u6700\u8fd1\u62a5\u544a\uff1a'
+      '${_formatLatestReportSummary(highlights.latestReport)} / '
+      '\u6700\u5927\u62a5\u544a\uff1a'
+      '${_formatReportSizeHighlight(highlights.largestReport)} / '
+      '\u6700\u5c0f\u62a5\u544a\uff1a'
+      '${_formatReportSizeHighlight(highlights.smallestReport)}';
+}
+
+CodeAuditReportHistoryHighlights summarizeCodeAuditReportHistoryHighlights(
+  List<CodeAuditSavedReport> reports,
+) {
+  CodeAuditSavedReport? latestReport;
+  CodeAuditSavedReport? largestReport;
+  CodeAuditSavedReport? smallestReport;
+  for (final report in reports) {
+    if (latestReport == null ||
+        report.modifiedAt.isAfter(latestReport.modifiedAt)) {
+      latestReport = report;
+    }
+    if (largestReport == null || report.sizeBytes > largestReport.sizeBytes) {
+      largestReport = report;
+    }
+    if (smallestReport == null || report.sizeBytes < smallestReport.sizeBytes) {
+      smallestReport = report;
+    }
+  }
+  return CodeAuditReportHistoryHighlights(
+    latestReport: latestReport,
+    largestReport: largestReport,
+    smallestReport: smallestReport,
+  );
+}
+
+String _formatLatestReportSummary(CodeAuditSavedReport? report) {
+  if (report == null) return '\u65e0';
+  return '${report.fileName} / ${_formatReportTimestamp(report.modifiedAt)} / '
+      '${_formatReportSize(report.sizeBytes)}';
+}
+
+String _formatReportSizeHighlight(CodeAuditSavedReport? report) {
+  if (report == null) return '\u65e0';
+  return '${report.fileName} / ${_formatReportSize(report.sizeBytes)}';
 }
 
 CodeAuditReportType _reportTypeFromFileName(String fileName) {

@@ -19,11 +19,13 @@
 - 资源搜索和类型筛选。
 - 外部课程链接打开和资源入口复制。
 - 学习进度持久化。
+- 资源目录支持按全部/未完成/已完成状态筛选，筛选 chip 会显示当前关键词和类型条件下的资源数量，并在复制当前清单时保留完成状态筛选信息。
+- 资源目录支持按目录顺序、标题 A-Z、未完成优先排序，复制当前清单时沿用当前可见顺序。
 - 本地 RAG 分块检索；Markdown 标题、列表项和引用行会作为分块边界，减少学习笔记结构被合并到同一证据片段。
-- 本地 RAG 回答草稿：基于 Top 检索分块生成可追溯摘要、引用和依据片段。
+- 本地 RAG 回答草稿：基于 Top 检索分块生成可追溯摘要、引用、引用分数摘要和依据片段。
 - 本地 RAG 检索计划：展示查询意图、关键词 token、候选召回数量、上下文证据预算和当前检索策略；重复关键词会在检索与计划生成前归一化去重，逗号、顿号、分号、斜杠和竖线等常见分隔符也会作为关键词边界，避免重复输入放大排序分数。
 - 本地 RAG 学习笔记：可复制包含检索计划、回答草稿和引用证据的 Markdown 笔记，也可一键沉淀回本地 RAG 资料库并立即参与后续检索；重复沉淀同一学习笔记时会聚焦已有资料，避免生成重复条目，围绕已保存笔记继续检索时标题保持幂等。
-- RAG 资料导入、删除和持久化；持久化读写会归一化标题、来源、摘要、正文和标签，并过滤空标题/空正文资料，重复手动导入会聚焦已有资料而不是生成重复条目，删除后可通过提示操作撤销恢复，已导入列表会展示来源与标签便于整理，标签较多时会显示剩余数量提示且可查看折叠标签，点击已导入资料可快速聚焦检索，也可一键复制为 Markdown 资料卡；已导入资料库可一键复制 Markdown 总览，包含资料数量、来源/标签分布和逐条摘要；检索结果会显示排序原因，检索计划、回答草稿和检索结果片段都可复制为 Markdown 卡片，便于带入笔记或 Prompt。
+- RAG 资料导入、删除和持久化；持久化读写会归一化标题、来源、摘要、正文和标签，并过滤空标题/空正文资料，重复手动导入会聚焦已有资料而不是生成重复条目，删除后可通过提示操作撤销恢复，已导入列表会展示来源与标签便于整理，标签较多时会显示剩余数量提示且可查看折叠标签，点击已导入资料可快速聚焦检索，也可一键复制为 Markdown 资料卡；已导入资料库可一键复制 Markdown 总览，包含资料数量、平均正文长度、最长资料、缺少摘要数量、来源/标签分布和逐条摘要；检索结果会显示排序原因，检索计划、回答草稿和检索结果片段都可复制为 Markdown 卡片，便于带入笔记或 Prompt。
 - 推荐算法原型：按学习目标做本地召回和排序。
 
 ### 编程区
@@ -36,6 +38,9 @@
 - Markdown 审计报告复制。
 - Markdown 审计报告保存到本地文件。
 - Prompt 模板复制。
+- AI 审计请求草稿展示高/中/低风险分布，并在复制内容中包含复核优先级。
+- AI 审计请求草稿展示命中文件、最高集中位置和行号范围，复制内容中同步包含位置覆盖摘要。
+- AI 审计请求草稿展示命中规则数量和最高频规则，复制内容中同步包含规则覆盖摘要。
 
 ### 放松区
 
@@ -86,20 +91,50 @@
 - Local RAG document chunking now treats Markdown headings, list items, and blockquote lines as body evidence boundaries, so imported notes keep review sections and action items as focused snippets.
 - Local RAG search results now include ranking reasons in the preview card and copied Markdown, showing matched fields, matched tags, best evidence chunk, and score.
 - Learning progress can now be copied as a `学习进度复盘` Markdown review with generated time, completed count, completion percentage, resource type distribution, and completed resource entries.
+- Copied learning progress reviews now include completed-resource difficulty distribution.
+- Learning progress now shows a shared completion summary in the visible panel, matching the copied review's completed-count and percentage wording.
+- Learning progress summaries now include remaining resource count in both the visible panel and copied Markdown review.
+- Learning progress summaries now include the next unfinished resource in both the visible panel and copied Markdown review.
 - Learning progress can now be cleared from the progress panel with snackbar undo, restoring the previous completed resource set when tapped.
+- The current filtered learning resource catalog can now be copied as Markdown, including keyword/type filters, completion status, tags, descriptions, and entry links.
+- The learning resource catalog now shows a compact visible summary with current matches, completed/unfinished counts, completion rate, active status filter, and sort mode.
+- Copied learning resource catalog Markdown now includes unfinished count, completion rate, and difficulty distribution, matching the visible catalog summary.
 - Learning recommendations are now progress-aware: completed resource ids are filtered before ranking, so the recommendation panel behaves more like a next-step list.
+- Learning recommendation entries can now be marked complete in place, persisting progress and immediately removing completed resources from the next-step list.
+- Recommendation completion now supports snackbar undo, restoring the resource to the next-step list and keeping persisted progress in sync.
 - Learning recommendations can now be copied as a `学习推荐清单` Markdown artifact with the selected goal, completed-resource count, recommendation scores, reasons, tags, and entry links.
+- Copied learning recommendation Markdown now includes score range, average score, resource type/difficulty/topic distribution, and the local recommendation pipeline stages.
+- The learning recommendation panel now shows the current topic distribution before users copy the recommendation Markdown.
+- The learning recommendation panel now also shows the current score range and average score before users copy the recommendation Markdown.
+- The learning recommendation panel now shows the current resource type and difficulty distribution before users copy the recommendation Markdown.
+- The learning recommendation panel and copied Markdown now show a list-status summary with completed-resource count and current recommendation count.
+- The learning recommendation panel and copied Markdown now show the current top-ranked recommendation with its score.
+- The learning recommendation panel and copied Markdown now show a shared pipeline summary with local stage order and stage count.
 - Learning recommendation goals now show a completion empty state when every matching resource has already been marked done.
 - Local code audit now flags enabled debug mode such as `debug: true`, `debugMode = true`, and `.debug = true` as a medium-severity hardening issue.
+- AI audit request drafts now include a finding-location digest with hit file count, hottest file, and line-number range.
 - Code audit report history entries can now be deleted from the coding zone, removing the saved Markdown file and refreshing the list.
 - Code audit report deletion now supports snackbar undo, restoring the deleted Markdown file and refreshing report history when tapped.
+- Code audit report history summaries now include average size, the most recently modified report with timestamp and size, and the largest/smallest saved reports.
+- Code audit report history now shows the current all/snippet/project filter subtotal directly in the panel, including report count, total size, and average size.
+- Code audit report history filter summaries now include the latest report for the current filter with timestamp and size, plus largest and smallest report highlights.
 - Relax session Markdown summaries now include rhythm distribution, showing counts and total minutes per focus/rest rhythm.
+- Relax session Markdown summaries now include average minutes per record, the longest and shortest recorded rhythms, and the most recent record.
 - Relax session history now shows the same rhythm distribution in the panel, including the empty `无` state before records exist.
+- Relax session history filter summaries now use the shared count/minute formatter, keeping the visible all/focus/rest subtotal stable for tests and future copy flows.
+- Relax session history can now copy the current all/focus/rest filter as a focused Markdown summary with filter scope, subtotal, rhythm distribution, highlights, and only the selected records.
 - Relax session history clearing now supports snackbar undo, restoring the cleared records and persisted storage when tapped.
+- Individual relax session records can now be deleted from history with snackbar undo, restoring the removed record and persisted storage when tapped.
+- Individual relax session records can now be copied as compact Markdown cards for daily reviews, learning journals, or prompts.
+- Relax session history can now be filtered between all, focus, and rest records while preserving correct copy/delete behavior for the original stored session.
 - Local RAG chunk scoring now boosts exact multi-token phrase matches, so evidence containing `conflict merge` ranks ahead of chunks that only match the words separately.
 - Local RAG phrase scoring now tolerates technical separators between phrase tokens, so `conflict-merge` can rank as adjacent evidence for a `conflict merge` query.
 - Local RAG retrieval plans now clamp negative candidate/context limits to zero before rendering plan chips, evidence budgets, or Markdown study notes.
 - Local RAG answer drafts now explain when the context evidence budget is zero, instead of presenting the skipped retrieval as a no-hit result.
+- Local RAG answer draft panels now show the highest and average citation scores before export, matching the copied Markdown summary.
+- Local RAG study-note exports now include the same highest and average citation score summary used by answer drafts.
+- Saved local RAG study-note documents now carry the same citation score summary in their document summaries, so re-imported note cards expose evidence strength before opening the full Markdown.
+- Local RAG citation score summaries now include the lowest citation score alongside highest and average values across answer drafts, study notes, and saved study-note documents.
 - Local RAG query tokenization now treats English and Chinese colons as title separators, so saved note titles such as `RAG 学习笔记：BM25:Embedding` continue to retrieve the underlying technical keywords.
 - Local RAG query tokenization now treats plus signs as technical separators, so compact queries such as `BM25+Embedding+RAG` retrieve each underlying keyword.
 - Local RAG query tokenization now treats hyphens as technical separators, so compact queries such as `BM25-Embedding-RAG` retrieve each underlying keyword.

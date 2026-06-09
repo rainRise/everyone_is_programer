@@ -20,8 +20,27 @@ class RelaxZonePage extends StatefulWidget {
   State<RelaxZonePage> createState() => _RelaxZonePageState();
 }
 
+enum _RelaxHistoryFilter {
+  all('全部'),
+  focus('专注'),
+  rest('休息');
+
+  const _RelaxHistoryFilter(this.label);
+
+  final String label;
+
+  bool matches(RelaxSessionRecord session) {
+    return switch (this) {
+      _RelaxHistoryFilter.all => true,
+      _RelaxHistoryFilter.focus => session.title.contains('专注'),
+      _RelaxHistoryFilter.rest => session.title.contains('休息'),
+    };
+  }
+}
+
 class _RelaxZonePageState extends State<RelaxZonePage> {
   int _selectedToolIndex = 0;
+  _RelaxHistoryFilter _historyFilter = _RelaxHistoryFilter.all;
   late int _remainingSeconds = relaxTools.first.minutes * 60;
   final List<RelaxSessionRecord> _sessions = [];
   Timer? _timer;
@@ -127,6 +146,46 @@ class _RelaxZonePageState extends State<RelaxZonePage> {
       );
   }
 
+  Future<void> _deleteSession(int index) async {
+    if (index < 0 || index >= _sessions.length) return;
+    final removedSession = _sessions[index];
+    setState(() {
+      _sessions.removeAt(index);
+    });
+    await _saveSessions();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${removedSession.title} 已删除'),
+          action: SnackBarAction(
+            label: '撤销',
+            onPressed: () {
+              unawaited(_restoreDeletedSession(removedSession, index));
+            },
+          ),
+        ),
+      );
+  }
+
+  Future<void> _restoreDeletedSession(
+    RelaxSessionRecord removedSession,
+    int index,
+  ) async {
+    final insertIndex = index.clamp(0, _sessions.length).toInt();
+    setState(() {
+      _sessions.insert(insertIndex, removedSession);
+    });
+    await _saveSessions();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('${removedSession.title} 已恢复')),
+      );
+  }
+
   Future<void> _restoreClearedSessions(
     List<RelaxSessionRecord> removedSessions,
   ) async {
@@ -145,6 +204,38 @@ class _RelaxZonePageState extends State<RelaxZonePage> {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('节奏总结已复制')),
+    );
+  }
+
+  Future<void> _copyFilteredSessionSummary(
+    BuildContext context,
+    List<RelaxSessionRecord> sessions,
+    _RelaxHistoryFilter filter,
+  ) async {
+    await Clipboard.setData(
+      ClipboardData(
+        text: formatRelaxSessionFilteredSummary(
+          sessions,
+          filterLabel: filter.label,
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${filter.label} 节奏总结已复制')),
+    );
+  }
+
+  Future<void> _copySessionRecord(
+    BuildContext context,
+    RelaxSessionRecord session,
+  ) async {
+    await Clipboard.setData(
+      ClipboardData(text: formatRelaxSessionRecordMarkdown(session)),
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${session.title} 记录已复制')),
     );
   }
 
@@ -180,8 +271,29 @@ class _RelaxZonePageState extends State<RelaxZonePage> {
               const SizedBox(height: 16),
               _RelaxSessionHistoryPanel(
                 sessions: _sessions,
+                selectedFilter: _historyFilter,
                 onClear: _clearSessions,
                 onCopySummary: () => _copySessionSummary(context),
+                onCopyFilteredSummary: (sessions) {
+                  unawaited(
+                    _copyFilteredSessionSummary(
+                      context,
+                      sessions,
+                      _historyFilter,
+                    ),
+                  );
+                },
+                onCopyRecord: (session) {
+                  unawaited(_copySessionRecord(context, session));
+                },
+                onFilterChanged: (filter) {
+                  setState(() {
+                    _historyFilter = filter;
+                  });
+                },
+                onDelete: (index) {
+                  unawaited(_deleteSession(index));
+                },
               ),
               const SizedBox(height: 16),
               const _RelaxItem(
@@ -335,13 +447,23 @@ class _FocusTimerPanel extends StatelessWidget {
 class _RelaxSessionHistoryPanel extends StatelessWidget {
   const _RelaxSessionHistoryPanel({
     required this.sessions,
+    required this.selectedFilter,
     required this.onClear,
     required this.onCopySummary,
+    required this.onCopyFilteredSummary,
+    required this.onCopyRecord,
+    required this.onFilterChanged,
+    required this.onDelete,
   });
 
   final List<RelaxSessionRecord> sessions;
+  final _RelaxHistoryFilter selectedFilter;
   final VoidCallback onClear;
   final VoidCallback onCopySummary;
+  final ValueChanged<List<RelaxSessionRecord>> onCopyFilteredSummary;
+  final ValueChanged<RelaxSessionRecord> onCopyRecord;
+  final ValueChanged<_RelaxHistoryFilter> onFilterChanged;
+  final ValueChanged<int> onDelete;
 
   int get totalMinutes {
     return sessions.fold(0, (sum, session) => sum + session.minutes);
@@ -350,6 +472,11 @@ class _RelaxSessionHistoryPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final filteredEntries = sessions.indexed
+        .where((entry) => selectedFilter.matches(entry.$2))
+        .toList();
+    final filteredSessions =
+        filteredEntries.map((entry) => entry.$2).toList(growable: false);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -395,18 +522,72 @@ class _RelaxSessionHistoryPanel extends StatelessWidget {
             Text('已记录 ${sessions.length} 次，共 $totalMinutes 分钟。'),
             const SizedBox(height: 4),
             Text('节奏分布：${formatRelaxSessionDistribution(sessions)}'),
+            const SizedBox(height: 4),
+            Text(
+              formatRelaxSessionHighlightSummary(sessions),
+              key: const ValueKey('relax-session-highlight-summary'),
+            ),
             const SizedBox(height: 8),
             if (sessions.isEmpty)
               const Text('完成专注或休息后点击对勾记录一次。')
-            else
-              for (final session in sessions.take(5))
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.check_circle_outline),
-                  title: Text(session.title),
-                  subtitle: Text('${session.minutes} 分钟'),
-                  trailing: Text(_formatCompletedAt(session.completedAt)),
-                ),
+            else ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final filter in _RelaxHistoryFilter.values)
+                    FilterChip(
+                      label: Text('${filter.label} ${_countFor(filter)}'),
+                      selected: selectedFilter == filter,
+                      onSelected: (_) => onFilterChanged(filter),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      formatRelaxSessionFilterSummary(filteredSessions),
+                      key: const ValueKey('relax-session-filter-summary'),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '复制当前筛选总结',
+                    onPressed: () => onCopyFilteredSummary(filteredSessions),
+                    icon: const Icon(Icons.copy_all_outlined),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              if (filteredEntries.isEmpty)
+                const Text('当前筛选暂无节奏记录。')
+              else
+                for (final entry in filteredEntries.take(5))
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.check_circle_outline),
+                    title: Text(entry.$2.title),
+                    subtitle: Text('${entry.$2.minutes} 分钟'),
+                    trailing: Wrap(
+                      spacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(_formatCompletedAt(entry.$2.completedAt)),
+                        IconButton(
+                          tooltip: '复制节奏记录',
+                          onPressed: () => onCopyRecord(entry.$2),
+                          icon: const Icon(Icons.copy_outlined),
+                        ),
+                        IconButton(
+                          tooltip: '删除节奏记录',
+                          onPressed: () => onDelete(entry.$1),
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ],
+                    ),
+                  ),
+            ],
           ],
         ),
       ),
@@ -419,6 +600,10 @@ class _RelaxSessionHistoryPanel extends StatelessWidget {
     final hour = completedAt.hour.toString().padLeft(2, '0');
     final minute = completedAt.minute.toString().padLeft(2, '0');
     return '$month-$day $hour:$minute';
+  }
+
+  int _countFor(_RelaxHistoryFilter filter) {
+    return sessions.where(filter.matches).length;
   }
 }
 

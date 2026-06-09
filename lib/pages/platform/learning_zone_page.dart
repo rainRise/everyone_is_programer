@@ -23,16 +23,62 @@ class LearningZonePage extends StatefulWidget {
   State<LearningZonePage> createState() => _LearningZonePageState();
 }
 
+enum _LearningCompletionFilter {
+  all('全部状态'),
+  incomplete('未完成'),
+  completed('已完成');
+
+  const _LearningCompletionFilter(this.label);
+
+  final String label;
+
+  bool matches(
+    PlatformLearningResource resource,
+    Set<String> completedResourceIds,
+  ) {
+    final isCompleted = completedResourceIds.contains(resource.id);
+    return switch (this) {
+      _LearningCompletionFilter.all => true,
+      _LearningCompletionFilter.incomplete => !isCompleted,
+      _LearningCompletionFilter.completed => isCompleted,
+    };
+  }
+}
+
+enum _LearningResourceSort {
+  catalog('目录顺序'),
+  title('标题 A-Z'),
+  incompleteFirst('未完成优先');
+
+  const _LearningResourceSort(this.label);
+
+  final String label;
+}
+
 class _LearningZonePageState extends State<LearningZonePage> {
   String _keyword = '';
   PlatformResourceType? _selectedType;
+  _LearningCompletionFilter _completionFilter = _LearningCompletionFilter.all;
+  _LearningResourceSort _resourceSort = _LearningResourceSort.catalog;
   PlatformLearningGoal _selectedGoal = PlatformLearningGoal.rag;
   final Set<String> _completedResourceIds = {};
 
-  List<PlatformLearningResource> get _filteredResources {
+  List<PlatformLearningResource> get _catalogBaseResources {
     return allPlatformLearningResources
         .where((resource) => resource.matches(_keyword, _selectedType))
         .toList();
+  }
+
+  List<PlatformLearningResource> get _filteredResources {
+    final resources = _catalogBaseResources
+        .where(
+          (resource) => _completionFilter.matches(
+            resource,
+            _completedResourceIds,
+          ),
+        )
+        .toList();
+    return _sortResources(resources);
   }
 
   @override
@@ -45,6 +91,41 @@ class _LearningZonePageState extends State<LearningZonePage> {
     setState(() {
       _selectedType = type;
     });
+  }
+
+  void _selectCompletionFilter(_LearningCompletionFilter filter) {
+    setState(() {
+      _completionFilter = filter;
+    });
+  }
+
+  void _selectResourceSort(_LearningResourceSort sort) {
+    setState(() {
+      _resourceSort = sort;
+    });
+  }
+
+  List<PlatformLearningResource> _sortResources(
+    List<PlatformLearningResource> resources,
+  ) {
+    final sortedResources = [...resources];
+    switch (_resourceSort) {
+      case _LearningResourceSort.catalog:
+        return sortedResources;
+      case _LearningResourceSort.title:
+        sortedResources.sort((a, b) => a.title.compareTo(b.title));
+        return sortedResources;
+      case _LearningResourceSort.incompleteFirst:
+        sortedResources.sort((a, b) {
+          final aCompleted = _completedResourceIds.contains(a.id);
+          final bCompleted = _completedResourceIds.contains(b.id);
+          if (aCompleted != bCompleted) {
+            return aCompleted ? 1 : -1;
+          }
+          return a.title.compareTo(b.title);
+        });
+        return sortedResources;
+    }
   }
 
   void _updateKeyword(String value) {
@@ -84,6 +165,38 @@ class _LearningZonePageState extends State<LearningZonePage> {
     await widget.progressRepository.saveCompletedResourceIds(
       _completedResourceIds,
     );
+  }
+
+  Future<void> _completeRecommendedResource(
+    PlatformLearningResource resource,
+  ) async {
+    await _toggleResourceCompleted(resource, true);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${resource.title} 已标记完成'),
+          action: SnackBarAction(
+            label: '撤销',
+            onPressed: () {
+              unawaited(_undoRecommendedResourceCompletion(resource));
+            },
+          ),
+        ),
+      );
+  }
+
+  Future<void> _undoRecommendedResourceCompletion(
+    PlatformLearningResource resource,
+  ) async {
+    await _toggleResourceCompleted(resource, false);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('${resource.title} 已恢复到推荐列表')),
+      );
   }
 
   Future<void> _copyLearningProgressSummary() async {
@@ -154,6 +267,8 @@ class _LearningZonePageState extends State<LearningZonePage> {
           completedResourceIds: _completedResourceIds,
           keyword: _keyword,
           selectedType: _selectedType,
+          completionFilterLabel: _completionFilter.label,
+          sortLabel: _resourceSort.label,
         ),
       ),
     );
@@ -168,7 +283,21 @@ class _LearningZonePageState extends State<LearningZonePage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final catalogBaseResources = _catalogBaseResources;
     final filteredResources = _filteredResources;
+    final filteredCompletedCount = filteredResources
+        .where(
+          (resource) => _completedResourceIds.contains(resource.id),
+        )
+        .length;
+    final completionFilterCounts = {
+      for (final filter in _LearningCompletionFilter.values)
+        filter: catalogBaseResources.where(
+          (resource) {
+            return filter.matches(resource, _completedResourceIds);
+          },
+        ).length,
+    };
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -192,6 +321,8 @@ class _LearningZonePageState extends State<LearningZonePage> {
               const SizedBox(height: 16),
               _LearningProgressPanel(
                 completedCount: _completedResourceIds.length,
+                completedResourceIds: _completedResourceIds,
+                resources: allPlatformLearningResources,
                 totalCount: allPlatformLearningResources.length,
                 onCopyProgress: _copyLearningProgressSummary,
                 onClearProgress: _completedResourceIds.isEmpty
@@ -201,14 +332,20 @@ class _LearningZonePageState extends State<LearningZonePage> {
               const SizedBox(height: 16),
               _LearningSearchBar(
                 selectedType: _selectedType,
+                selectedCompletionFilter: _completionFilter,
+                completionFilterCounts: completionFilterCounts,
                 onKeywordChanged: _updateKeyword,
                 onTypeSelected: _selectType,
+                onCompletionFilterSelected: _selectCompletionFilter,
               ),
               const SizedBox(height: 16),
               _RecommendationPanel(
                 selectedGoal: _selectedGoal,
                 completedResourceIds: _completedResourceIds,
                 onGoalSelected: _selectGoal,
+                onResourceCompleted: (resource) {
+                  unawaited(_completeRecommendedResource(resource));
+                },
               ),
               const SizedBox(height: 24),
               Row(
@@ -221,6 +358,34 @@ class _LearningZonePageState extends State<LearningZonePage> {
                           ),
                     ),
                   ),
+                  PopupMenuButton<_LearningResourceSort>(
+                    tooltip: '资源排序',
+                    onSelected: _selectResourceSort,
+                    itemBuilder: (context) {
+                      return [
+                        for (final sort in _LearningResourceSort.values)
+                          CheckedPopupMenuItem<_LearningResourceSort>(
+                            value: sort,
+                            checked: _resourceSort == sort,
+                            child: Text(sort.label),
+                          ),
+                      ];
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sort),
+                          const SizedBox(width: 6),
+                          Text(_resourceSort.label),
+                        ],
+                      ),
+                    ),
+                  ),
                   IconButton(
                     tooltip: '复制当前资源清单',
                     onPressed: () => _copyFilteredResourceCatalog(
@@ -231,6 +396,14 @@ class _LearningZonePageState extends State<LearningZonePage> {
                 ],
               ),
               const SizedBox(height: 8),
+              _LearningCatalogSummary(
+                baseCount: catalogBaseResources.length,
+                filteredCount: filteredResources.length,
+                completedCount: filteredCompletedCount,
+                sortLabel: _resourceSort.label,
+                completionFilterLabel: _completionFilter.label,
+              ),
+              const SizedBox(height: 12),
               if (filteredResources.isEmpty)
                 const _EmptyResourceResult()
               else
@@ -412,12 +585,16 @@ class _WorkflowStageCard extends StatelessWidget {
 class _LearningProgressPanel extends StatelessWidget {
   const _LearningProgressPanel({
     required this.completedCount,
+    required this.completedResourceIds,
+    required this.resources,
     required this.totalCount,
     required this.onCopyProgress,
     required this.onClearProgress,
   });
 
   final int completedCount;
+  final Set<String> completedResourceIds;
+  final List<PlatformLearningResource> resources;
   final int totalCount;
   final VoidCallback onCopyProgress;
   final VoidCallback? onClearProgress;
@@ -426,6 +603,14 @@ class _LearningProgressPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = totalCount == 0 ? 0.0 : completedCount / totalCount;
     final colorScheme = Theme.of(context).colorScheme;
+    final summary = formatLearningProgressSummary(
+      completedCount: completedCount,
+      nextResource: formatLearningProgressNextResource(
+        completedResourceIds: completedResourceIds,
+        resources: resources,
+      ),
+      totalCount: totalCount,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -465,6 +650,12 @@ class _LearningProgressPanel extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             LinearProgressIndicator(value: progress),
+            const SizedBox(height: 8),
+            Text(
+              summary,
+              key: const ValueKey('learning-progress-summary'),
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       ),
@@ -477,11 +668,13 @@ class _RecommendationPanel extends StatelessWidget {
     required this.selectedGoal,
     required this.completedResourceIds,
     required this.onGoalSelected,
+    required this.onResourceCompleted,
   });
 
   final PlatformLearningGoal selectedGoal;
   final Set<String> completedResourceIds;
   final ValueChanged<PlatformLearningGoal> onGoalSelected;
+  final ValueChanged<PlatformLearningResource> onResourceCompleted;
 
   Future<void> _copyRecommendations(
     BuildContext context,
@@ -576,6 +769,127 @@ class _RecommendationPanel extends StatelessWidget {
                   ),
               ],
             ),
+            const SizedBox(height: 8),
+            Row(
+              key: const ValueKey('recommendation-list-status'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.checklist_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    formatLearningRecommendationListStatus(
+                      recommendations: recommendations,
+                      completedResourceIds: completedResourceIds,
+                    ),
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              key: const ValueKey('recommendation-top-resource'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.star_outline,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '\u9996\u63a8\u8d44\u6e90\uff1a'
+                    '${formatLearningRecommendationTopResource(recommendations)}',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              key: const ValueKey('recommendation-score-summary'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.leaderboard_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    formatLearningRecommendationScoreSummary(recommendations),
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              key: const ValueKey('recommendation-resource-structure'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.category_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    formatLearningRecommendationResourceStructure(
+                      recommendations,
+                    ),
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              key: const ValueKey('recommendation-topic-distribution'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.sell_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '\u4e3b\u9898\u5206\u5e03\uff1a'
+                    '${formatLearningRecommendationTopicDistribution(recommendations)}',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              key: const ValueKey('recommendation-pipeline-summary'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.account_tree_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    formatLearningRecommendationPipelineSummary(),
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             for (final stage in recommendationPipelineStages)
               _RecommendationStageTile(
@@ -592,7 +906,135 @@ class _RecommendationPanel extends StatelessWidget {
                     'recommendation-${recommendation.resource.id}',
                   ),
                   recommendation: recommendation,
+                  onCompleted: onResourceCompleted,
                 ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LearningCatalogSummary extends StatelessWidget {
+  const _LearningCatalogSummary({
+    required this.baseCount,
+    required this.filteredCount,
+    required this.completedCount,
+    required this.sortLabel,
+    required this.completionFilterLabel,
+  });
+
+  final int baseCount;
+  final int filteredCount;
+  final int completedCount;
+  final String sortLabel;
+  final String completionFilterLabel;
+
+  int get incompleteCount => filteredCount - completedCount;
+
+  String get completionRate {
+    if (filteredCount == 0) return '0%';
+    return '${((completedCount / filteredCount) * 100).round()}%';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      key: const ValueKey('learning-catalog-summary'),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.36),
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _LearningCatalogMetric(
+              label: '\u5f53\u524d\u5339\u914d',
+              value: '$filteredCount / $baseCount',
+              icon: Icons.filter_alt_outlined,
+            ),
+            _LearningCatalogMetric(
+              label: '\u5df2\u5b8c\u6210',
+              value: '$completedCount',
+              icon: Icons.task_alt_outlined,
+            ),
+            _LearningCatalogMetric(
+              label: '\u672a\u5b8c\u6210',
+              value: '$incompleteCount',
+              icon: Icons.radio_button_unchecked,
+            ),
+            _LearningCatalogMetric(
+              key: const ValueKey('learning-catalog-completion-rate'),
+              label: '\u5b8c\u6210\u7387',
+              value: completionRate,
+              icon: Icons.percent,
+            ),
+            _LearningCatalogMetric(
+              label: '\u72b6\u6001',
+              value: completionFilterLabel,
+              icon: Icons.checklist_outlined,
+            ),
+            _LearningCatalogMetric(
+              label: '\u6392\u5e8f',
+              value: sortLabel,
+              icon: Icons.sort,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LearningCatalogMetric extends StatelessWidget {
+  const _LearningCatalogMetric({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: colorScheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              value,
+              style: textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),
@@ -670,9 +1112,14 @@ class _RecommendationStageTile extends StatelessWidget {
 }
 
 class _RecommendationTile extends StatelessWidget {
-  const _RecommendationTile({super.key, required this.recommendation});
+  const _RecommendationTile({
+    super.key,
+    required this.recommendation,
+    required this.onCompleted,
+  });
 
   final RecommendedLearningResource recommendation;
+  final ValueChanged<PlatformLearningResource> onCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -698,6 +1145,11 @@ class _RecommendationTile extends StatelessWidget {
                 Text(recommendation.reason),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: '标记推荐资源完成',
+            onPressed: () => onCompleted(resource),
+            icon: const Icon(Icons.task_alt_outlined),
           ),
         ],
       ),
@@ -807,13 +1259,19 @@ class _PathStep extends StatelessWidget {
 class _LearningSearchBar extends StatelessWidget {
   const _LearningSearchBar({
     required this.selectedType,
+    required this.selectedCompletionFilter,
+    required this.completionFilterCounts,
     required this.onKeywordChanged,
     required this.onTypeSelected,
+    required this.onCompletionFilterSelected,
   });
 
   final PlatformResourceType? selectedType;
+  final _LearningCompletionFilter selectedCompletionFilter;
+  final Map<_LearningCompletionFilter, int> completionFilterCounts;
   final ValueChanged<String> onKeywordChanged;
   final ValueChanged<PlatformResourceType?> onTypeSelected;
+  final ValueChanged<_LearningCompletionFilter> onCompletionFilterSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -844,6 +1302,21 @@ class _LearningSearchBar extends StatelessWidget {
                 label: Text(type.label),
                 selected: selectedType == type,
                 onSelected: (_) => onTypeSelected(type),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final filter in _LearningCompletionFilter.values)
+              ChoiceChip(
+                label: Text(
+                  '${filter.label} ${completionFilterCounts[filter] ?? 0}',
+                ),
+                selected: selectedCompletionFilter == filter,
+                onSelected: (_) => onCompletionFilterSelected(filter),
               ),
           ],
         ),

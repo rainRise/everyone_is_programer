@@ -156,11 +156,109 @@ void main() {
     expect(summary, contains('- 当前筛选：全部'));
     expect(summary, contains('- 报告数量：2'));
     expect(summary, contains('- 总大小：384 B'));
+    expect(summary, contains('- 平均大小：192 B'));
     expect(summary, contains('片段审计 1'));
     expect(summary, contains('项目审计 1'));
+    expect(
+      summary,
+      contains(
+          '- \u6700\u8fd1\u62a5\u544a\uff1aproject_code_audit_app.md / 2026-01-02 10:00 / 256 B'),
+    );
+    expect(
+      summary,
+      contains(
+          '- \u6700\u5927\u62a5\u544a\uff1aproject_code_audit_app.md / 256 B'),
+    );
+    expect(
+      summary,
+      contains('- \u6700\u5c0f\u62a5\u544a\uff1acode_audit_snippet.md / 128 B'),
+    );
     expect(summary.indexOf('project_code_audit_app.md'),
         lessThan(summary.indexOf('code_audit_snippet.md')));
     expect(summary, contains(r'C:\tmp\project_code_audit_app.md'));
+  });
+
+  test('code audit repository formats empty report history summary markdown',
+      () {
+    final summary = formatCodeAuditReportHistorySummary(
+      const [],
+      generatedAt: DateTime(2026, 1, 3, 9, 30),
+    );
+
+    expect(summary, contains('- \u6700\u8fd1\u62a5\u544a\uff1a\u65e0'));
+    expect(summary, contains('- \u6700\u5927\u62a5\u544a\uff1a\u65e0'));
+    expect(summary, contains('- \u6700\u5c0f\u62a5\u544a\uff1a\u65e0'));
+    expect(summary, contains('- \u5e73\u5747\u5927\u5c0f\uff1a0 B'));
+    expect(summary, contains('暂无审计报告记录。'));
+  });
+
+  test('code audit repository formats visible filter summary', () {
+    final reports = [
+      CodeAuditSavedReport(
+        fileName: 'code_audit_snippet.md',
+        reportType: CodeAuditReportType.snippet,
+        path: r'C:\tmp\code_audit_snippet.md',
+        modifiedAt: DateTime(2026, 1, 1, 10),
+        sizeBytes: 512,
+      ),
+      CodeAuditSavedReport(
+        fileName: 'project_code_audit_app.md',
+        reportType: CodeAuditReportType.project,
+        path: r'C:\tmp\project_code_audit_app.md',
+        modifiedAt: DateTime(2026, 1, 2, 10),
+        sizeBytes: 1536,
+      ),
+    ];
+
+    expect(
+      formatCodeAuditReportHistoryFilterSummary(reports),
+      '\u5f53\u524d\u7b5b\u9009\uff1a2 \u4efd / '
+      '\u603b\u5927\u5c0f\uff1a2.0 KB / '
+      '\u5e73\u5747\u5927\u5c0f\uff1a1.0 KB / '
+      '\u6700\u8fd1\u62a5\u544a\uff1aproject_code_audit_app.md / '
+      '2026-01-02 10:00 / 1.5 KB / '
+      '\u6700\u5927\u62a5\u544a\uff1aproject_code_audit_app.md / 1.5 KB / '
+      '\u6700\u5c0f\u62a5\u544a\uff1acode_audit_snippet.md / 512 B',
+    );
+    expect(
+      formatCodeAuditReportHistoryFilterSummary(const []),
+      '\u5f53\u524d\u7b5b\u9009\uff1a0 \u4efd / '
+      '\u603b\u5927\u5c0f\uff1a0 B / '
+      '\u5e73\u5747\u5927\u5c0f\uff1a0 B / '
+      '\u6700\u8fd1\u62a5\u544a\uff1a\u65e0 / '
+      '\u6700\u5927\u62a5\u544a\uff1a\u65e0 / '
+      '\u6700\u5c0f\u62a5\u544a\uff1a\u65e0',
+    );
+  });
+
+  test('code audit repository summarizes report history highlights', () {
+    final snippetReport = CodeAuditSavedReport(
+      fileName: 'code_audit_snippet.md',
+      reportType: CodeAuditReportType.snippet,
+      path: r'C:\tmp\code_audit_snippet.md',
+      modifiedAt: DateTime(2026, 1, 3, 10),
+      sizeBytes: 128,
+    );
+    final projectReport = CodeAuditSavedReport(
+      fileName: 'project_code_audit_app.md',
+      reportType: CodeAuditReportType.project,
+      path: r'C:\tmp\project_code_audit_app.md',
+      modifiedAt: DateTime(2026, 1, 2, 10),
+      sizeBytes: 256,
+    );
+
+    final highlights = summarizeCodeAuditReportHistoryHighlights([
+      projectReport,
+      snippetReport,
+    ]);
+
+    expect(highlights.latestReport, snippetReport);
+    expect(highlights.largestReport, projectReport);
+    expect(highlights.smallestReport, snippetReport);
+    expect(
+      summarizeCodeAuditReportHistoryHighlights(const []).latestReport,
+      isNull,
+    );
   });
 
   test('code audit repository reads saved markdown reports', () async {

@@ -93,6 +93,43 @@ class RagSearchResult {
   final String excerpt;
 }
 
+class LocalRagCitationScoreSummary {
+  const LocalRagCitationScoreSummary({
+    required this.topScore,
+    required this.lowestScore,
+    required this.averageScore,
+  });
+
+  final int topScore;
+  final int lowestScore;
+  final String averageScore;
+}
+
+LocalRagCitationScoreSummary summarizeLocalRagCitationScores(
+  Iterable<RagSearchResult> contexts,
+) {
+  var topContextScore = 0;
+  int? lowestContextScore;
+  var totalContextScore = 0;
+  var contextCount = 0;
+  for (final result in contexts) {
+    if (result.score > topContextScore) topContextScore = result.score;
+    if (lowestContextScore == null || result.score < lowestContextScore) {
+      lowestContextScore = result.score;
+    }
+    totalContextScore += result.score;
+    contextCount++;
+  }
+  final averageContextScore = contextCount == 0
+      ? '0.0'
+      : (totalContextScore / contextCount).toStringAsFixed(1);
+  return LocalRagCitationScoreSummary(
+    topScore: topContextScore,
+    lowestScore: lowestContextScore ?? 0,
+    averageScore: averageContextScore,
+  );
+}
+
 class RagDocumentChunk {
   const RagDocumentChunk({
     required this.document,
@@ -509,6 +546,7 @@ String buildLocalRagStudyNote({
   required LocalRagRetrievalPlan plan,
   required LocalRagAnswerDraft draft,
 }) {
+  final citationScoreSummary = summarizeLocalRagCitationScores(draft.contexts);
   final buffer = StringBuffer()
     ..writeln('# RAG 学习笔记')
     ..writeln()
@@ -519,6 +557,11 @@ String buildLocalRagStudyNote({
     ..writeln('- 意图：${plan.intentLabel}')
     ..writeln('- 策略：${plan.retrievalStrategy}')
     ..writeln('- 证据预算：${plan.evidenceBudget}');
+
+  buffer
+    ..writeln('- 最高引用分：${citationScoreSummary.topScore}')
+    ..writeln('- 最低引用分：${citationScoreSummary.lowestScore}')
+    ..writeln('- 平均引用分：${citationScoreSummary.averageScore}');
 
   if (plan.tokens.isNotEmpty) {
     buffer.writeln('- 关键词：${plan.tokens.join('、')}');
@@ -550,9 +593,16 @@ LocalRagDocument buildLocalRagStudyNoteDocument({
   final query = plan.query.isEmpty ? draft.query : plan.query;
   final title = _buildLocalRagStudyNoteTitle(query);
   final content = buildLocalRagStudyNote(plan: plan, draft: draft);
+  final citationScoreSummary = summarizeLocalRagCitationScores(draft.contexts);
   final summary = draft.hasContext
-      ? '由本地 RAG 检索计划、回答草稿和 ${draft.contexts.length} 条引用证据生成。'
-      : '由本地 RAG 检索计划和回答草稿生成。';
+      ? '由本地 RAG 检索计划、回答草稿和 ${draft.contexts.length} 条引用证据生成，'
+          '最高引用分 ${citationScoreSummary.topScore}，'
+          '最低引用分 ${citationScoreSummary.lowestScore}，'
+          '平均引用分 ${citationScoreSummary.averageScore}。'
+      : '由本地 RAG 检索计划和回答草稿生成，'
+          '最高引用分 ${citationScoreSummary.topScore}，'
+          '最低引用分 ${citationScoreSummary.lowestScore}，'
+          '平均引用分 ${citationScoreSummary.averageScore}。';
 
   return LocalRagDocument(
     title: title,

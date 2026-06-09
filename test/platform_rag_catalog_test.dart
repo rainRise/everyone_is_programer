@@ -590,10 +590,55 @@ Closing paragraph records rerank checks.
     expect(note, contains('score'));
   });
 
+  test('local RAG citation score summary handles populated and empty contexts',
+      () {
+    final draft = buildLocalRagAnswer('BM25 Embedding');
+    final summary = summarizeLocalRagCitationScores(draft.contexts);
+    final emptySummary = summarizeLocalRagCitationScores(const []);
+    final lowestScore = draft.contexts
+        .map((context) => context.score)
+        .reduce((value, element) => value < element ? value : element);
+
+    expect(summary.topScore, draft.contexts.first.score);
+    expect(summary.lowestScore, lowestScore);
+    expect(summary.averageScore, isNotEmpty);
+    expect(emptySummary.topScore, 0);
+    expect(emptySummary.lowestScore, 0);
+    expect(emptySummary.averageScore, '0.0');
+  });
+
+  test('local RAG study note includes citation score summary', () {
+    const query = 'BM25 Embedding';
+    final plan = buildLocalRagRetrievalPlan(query);
+    final draft = buildLocalRagAnswer(query);
+    final summary = summarizeLocalRagCitationScores(draft.contexts);
+    final note = buildLocalRagStudyNote(plan: plan, draft: draft);
+
+    expect(
+      note,
+      contains(
+        '\u6700\u9ad8\u5f15\u7528\u5206\uff1a${summary.topScore}',
+      ),
+    );
+    expect(
+      note,
+      contains(
+        '\u6700\u4f4e\u5f15\u7528\u5206\uff1a${summary.lowestScore}',
+      ),
+    );
+    expect(
+      note,
+      contains(
+        '\u5e73\u5747\u5f15\u7528\u5206\uff1a${summary.averageScore}',
+      ),
+    );
+  });
+
   test('local RAG study note can be converted into a document', () {
     const query = 'BM25 Embedding';
     final plan = buildLocalRagRetrievalPlan(query);
     final draft = buildLocalRagAnswer(query);
+    final summary = summarizeLocalRagCitationScores(draft.contexts);
     final document = buildLocalRagStudyNoteDocument(
       plan: plan,
       draft: draft,
@@ -602,6 +647,9 @@ Closing paragraph records rerank checks.
     expect(document.title, contains(query));
     expect(document.source, 'RAG 学习笔记');
     expect(document.summary, contains('${draft.contexts.length}'));
+    expect(document.summary, contains('最高引用分 ${summary.topScore}'));
+    expect(document.summary, contains('最低引用分 ${summary.lowestScore}'));
+    expect(document.summary, contains('平均引用分 ${summary.averageScore}'));
     expect(document.content, contains(draft.answer));
     expect(document.tags, contains('RAG'));
     expect(document.tags, contains('学习笔记'));

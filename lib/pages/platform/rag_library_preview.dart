@@ -298,6 +298,10 @@ String buildImportedRagLibraryMarkdown(
   final generatedTime = generatedAt ?? DateTime.now();
   final sourceCounts = <String, int>{};
   final tagCounts = <String, int>{};
+  LocalRagDocument? longestDocument;
+  var longestContentLength = 0;
+  var totalContentLength = 0;
+  var missingSummaryCount = 0;
 
   for (final document in normalizedDocuments) {
     sourceCounts.update(
@@ -308,13 +312,31 @@ String buildImportedRagLibraryMarkdown(
     for (final tag in document.tags) {
       tagCounts.update(tag, (count) => count + 1, ifAbsent: () => 1);
     }
+    final contentLength = document.content.runes.length;
+    totalContentLength += contentLength;
+    if (longestDocument == null || contentLength > longestContentLength) {
+      longestDocument = document;
+      longestContentLength = contentLength;
+    }
+    if (document.summary.isEmpty) {
+      missingSummaryCount++;
+    }
   }
+  final averageContentLength = normalizedDocuments.isEmpty
+      ? 0.0
+      : totalContentLength / normalizedDocuments.length;
 
   final buffer = StringBuffer()
     ..writeln('# RAG 资料库总览')
     ..writeln()
     ..writeln('- 生成时间：${_formatRagLibraryTimestamp(generatedTime)}')
-    ..writeln('- 资料数量：${normalizedDocuments.length}');
+    ..writeln('- 资料数量：${normalizedDocuments.length}')
+    ..writeln(
+        '- 平均正文长度：${_formatAverageRagContentLength(averageContentLength)}')
+    ..writeln(
+      '- 最长资料：${_formatLongestRagDocument(longestDocument, longestContentLength)}',
+    )
+    ..writeln('- 缺少摘要：$missingSummaryCount');
 
   if (normalizedDocuments.isEmpty) {
     buffer
@@ -366,6 +388,18 @@ String _formatRagLibraryTimestamp(DateTime value) {
   String twoDigits(int number) => number.toString().padLeft(2, '0');
   return '${value.year}-${twoDigits(value.month)}-${twoDigits(value.day)} '
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
+}
+
+String _formatAverageRagContentLength(double length) {
+  return '${length.toStringAsFixed(1)} 字';
+}
+
+String _formatLongestRagDocument(
+  LocalRagDocument? document,
+  int contentLength,
+) {
+  if (document == null) return '无';
+  return '${document.title}（$contentLength 字）';
 }
 
 String _formatCountMap(Map<String, int> counts) {
@@ -431,6 +465,7 @@ String _buildRetrievalPlanMarkdown(LocalRagRetrievalPlan plan) {
 
 String _buildAnswerDraftMarkdown(LocalRagAnswerDraft draft) {
   final query = draft.query.isEmpty ? '未输入' : draft.query;
+  final citationScoreSummary = summarizeLocalRagCitationScores(draft.contexts);
   final citations = draft.contexts.isEmpty
       ? '无'
       : draft.contexts
@@ -445,6 +480,9 @@ String _buildAnswerDraftMarkdown(LocalRagAnswerDraft draft) {
 
 - 问题：$query
 - 引用数量：${draft.contexts.length}
+- 最高引用分：${citationScoreSummary.topScore}
+- 最低引用分：${citationScoreSummary.lowestScore}
+- 平均引用分：${citationScoreSummary.averageScore}
 
 ## 回答
 
@@ -588,6 +626,9 @@ class _RagAnswerDraftPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final citationScoreSummary = summarizeLocalRagCitationScores(
+      draft.contexts,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -621,6 +662,38 @@ class _RagAnswerDraftPanel extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             SelectableText(draft.answer),
+            const SizedBox(height: 10),
+            Wrap(
+              key: const ValueKey('rag-answer-citation-score-summary'),
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(
+                  avatar: const Icon(Icons.leaderboard_outlined, size: 18),
+                  label: Text(
+                    '\u6700\u9ad8\u5f15\u7528\u5206 '
+                    '${citationScoreSummary.topScore}',
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+                Chip(
+                  avatar: const Icon(Icons.insights_outlined, size: 18),
+                  label: Text(
+                    '\u6700\u4f4e\u5f15\u7528\u5206 '
+                    '${citationScoreSummary.lowestScore}',
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+                Chip(
+                  avatar: const Icon(Icons.insights_outlined, size: 18),
+                  label: Text(
+                    '\u5e73\u5747\u5f15\u7528\u5206 '
+                    '${citationScoreSummary.averageScore}',
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
             Wrap(
               alignment: WrapAlignment.end,
