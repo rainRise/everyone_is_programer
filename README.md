@@ -48,6 +48,8 @@ Windows 原生入口也已开始收口：初始窗口标题、单实例互斥锁
 
 ## 开发与验证
 
+第一次打开项目可以先看：`docs/how-to-open-project.md`。
+
 常用命令：
 
 ```bash
